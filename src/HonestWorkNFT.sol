@@ -7,13 +7,17 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
+//push deneme
+
 contract HonestWorkNFT is Ownable, ERC721 {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
 
     uint256 public constant MINT_FEE = 10 ether;
     uint256 public constant TOKEN_CAP = 10000;
+    // TBD
     uint256 public TIER2_FEE = 100 ether;
+    //TBD
     uint256 public TIER3_FEE = 1000 ether;
     bytes32 public whitelistRoot;
     mapping(address => bool) public whitelistCap;
