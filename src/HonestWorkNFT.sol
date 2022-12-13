@@ -13,13 +13,13 @@ contract HonestWorkNFT is Ownable, ERC721 {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     //TBD
-    uint256 public constant MINT_FEE = 10 ether;
+    uint256 public MINT_FEE = 10 ether;
 
     uint256 public constant TOKEN_CAP = 10000;
     // TBD
-    uint256 public TIER2_FEE = 100 ether;
+    uint256 public tier2Fee = 100 ether;
     //TBD
-    uint256 public TIER3_FEE = 1000 ether;
+    uint256 public tier3Fee = 1000 ether;
     bytes32 public whitelistRoot;
     mapping(address => bool) public whitelistCap;
 
@@ -66,7 +66,6 @@ contract HonestWorkNFT is Ownable, ERC721 {
             ownerOf(_tokenId) == msg.sender,
             "only owned tokens can be claimed"
         );
-        tier[_tokenId] = 2;
         soulbound[_tokenId] = true;
     }
 
@@ -84,9 +83,9 @@ contract HonestWorkNFT is Ownable, ERC721 {
             "only owned tokens can be claimed"
         );
         if (_tier == 2) {
-            require(msg.value > TIER2_FEE);
+            require(msg.value > tier2Fee);
         } else if (_tier == 3) {
-            require(msg.value > TIER3_FEE);
+            require(msg.value > tier3Fee);
         } else {
             revert("only 3 tiers possible");
         }
@@ -107,5 +106,13 @@ contract HonestWorkNFT is Ownable, ERC721 {
 
     function setWhitelistRoot(bytes32 _root) external onlyOwner {
         whitelistRoot = _root;
+    }
+
+    function changeTierTwoFee(uint256 _newFee) external onlyOwner {
+        tier2Fee = _newFee;
+    }
+
+    function changeTierThreeFee(uint256 _newFee) external onlyOwner {
+        tier3Fee = _newFee;
     }
 }
