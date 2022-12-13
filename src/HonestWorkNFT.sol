@@ -12,8 +12,9 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 contract HonestWorkNFT is Ownable, ERC721 {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
-
+    //TBD
     uint256 public constant MINT_FEE = 10 ether;
+
     uint256 public constant TOKEN_CAP = 10000;
     // TBD
     uint256 public TIER2_FEE = 100 ether;
@@ -22,8 +23,9 @@ contract HonestWorkNFT is Ownable, ERC721 {
     bytes32 public whitelistRoot;
     mapping(address => bool) public whitelistCap;
 
-    //@notice 1-not soulbound, 2-soulbound-tier1 3-soulbound-tier2 4-soulbound-tier3
+    //@notice  2 1- tier1  2-tier2 3-tier3
     mapping(uint256 => uint256) public tier;
+    mapping(uint256 => bool) public soulbound;
 
     constructor() ERC721("HonestWork", "HW") {}
 
@@ -34,6 +36,7 @@ contract HonestWorkNFT is Ownable, ERC721 {
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
         _mint(recipient, newItemId);
         tier[newItemId] = 1;
+        soulbound[newItemId] = false;
 
         return newItemId;
     }
@@ -53,6 +56,7 @@ contract HonestWorkNFT is Ownable, ERC721 {
         whitelistCap[msg.sender] = true;
         _mint(recipient, newItemId);
         tier[newItemId] = 1;
+        soulbound[newItemId] = false;
 
         return newItemId;
     }
@@ -63,6 +67,15 @@ contract HonestWorkNFT is Ownable, ERC721 {
             "only owned tokens can be claimed"
         );
         tier[_tokenId] = 2;
+        soulbound[_tokenId] = true;
+    }
+
+    function unbindToken(uint256 _tokenId) external {
+        require(
+            ownerOf(_tokenId) == msg.sender,
+            "only owned tokens can be disclaimed"
+        );
+        soulbound[_tokenId] = false;
     }
 
     function upgradeToken(uint256 _tokenId, uint256 _tier) external payable {
@@ -70,12 +83,12 @@ contract HonestWorkNFT is Ownable, ERC721 {
             ownerOf(_tokenId) == msg.sender,
             "only owned tokens can be claimed"
         );
-        if (_tier == 3) {
+        if (_tier == 2) {
             require(msg.value > TIER2_FEE);
-        } else if (_tier == 4) {
+        } else if (_tier == 3) {
             require(msg.value > TIER3_FEE);
         } else {
-            revert();
+            revert("only 3 tiers possible");
         }
         tier[_tokenId] = _tier;
     }
