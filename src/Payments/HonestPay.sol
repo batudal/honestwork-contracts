@@ -128,7 +128,7 @@ contract HonestPay is Ownable {
     function unlockPayment(uint256 _dealId) external {
         require(
             dealsMapping[_dealId].employer == msg.sender,
-            "only relevant creator can call this function"
+            "only relevant employer can call this function"
         );
         dealsMapping[_dealId].status = Status.PaymentUnlocked;
     }
@@ -140,5 +140,10 @@ contract HonestPay is Ownable {
         );
         dealsMapping[_dealId].creator = _newCreator;
         dealsMapping[_dealId].status = Status.DealInitiated;
+    }
+
+    function setJobListingFee(uint256 _newFee) external onlyOwner {
+        jobListingFee = _newFee;
+
     }
 }
