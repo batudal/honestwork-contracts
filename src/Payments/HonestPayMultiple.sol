@@ -4,6 +4,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+// downpayment %20
+// success fee with downpayment, if deal cancelled refund
+// add deadline, if deadline is passed and job not completed, its cancelled. % of payment refund is made accordingly
+
 contract HonestPay is Ownable {
     enum Status {
         DealInitiated,
@@ -101,7 +105,7 @@ contract HonestPay is Ownable {
             deal.status = Status.MilestoneReached;
             deal.paymentsMade += _amount;
         }
-        if (deal.paymentsMade > deal.totalPayment) {
+        if (deal.paymentsMade >= deal.totalPayment) {
             completeJobEmployer(_rate, _dealId);
         }
     }
