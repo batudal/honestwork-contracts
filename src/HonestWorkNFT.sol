@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 //push deneme
+//cant bind more than one NFT
 
 contract HonestWorkNFT is Ownable, ERC721 {
     using Counters for Counters.Counter;

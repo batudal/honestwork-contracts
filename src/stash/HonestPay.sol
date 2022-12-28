@@ -24,7 +24,7 @@ contract HonestPay is Ownable {
     mapping(uint256 => Deal) public dealsMapping;
     address public HonestWorkFeeCollector;
     uint256 public honestWorkFee;
-    uint256 public jobListingFee;
+    uint256 public jobListingFee; //REMOVE
 
 
     using Counters for Counters.Counter;
