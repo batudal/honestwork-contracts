@@ -57,7 +57,9 @@ contract HonestPay is Ownable {
             _totalPayment,
             _deadline,
             0,
-            Status.OfferInitiated,0,0
+            Status.OfferInitiated,
+            0,
+            0
         );
         if (_paymentToken == address(0)) {
             require(
@@ -74,9 +76,11 @@ contract HonestPay is Ownable {
         }
     }
 
-
     function unlockPayment(uint256 _dealId, uint256 _paymentAmount) external {
-        require(dealsMapping[_dealId].recruiter == msg.sender, "only recruiter can unlock payments");
+        require(
+            dealsMapping[_dealId].recruiter == msg.sender,
+            "only recruiter can unlock payments"
+        );
         dealsMapping[_dealId].availablePayment += _paymentAmount;
     }
 
@@ -89,7 +93,10 @@ contract HonestPay is Ownable {
             require(payment, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.approve(dealsMapping[_dealId].creator, _withdrawAmount);
+            paymentToken.approve(
+                dealsMapping[_dealId].creator,
+                _withdrawAmount
+            );
             paymentToken.transferFrom(
                 address(this),
                 msg.sender,
@@ -97,11 +104,16 @@ contract HonestPay is Ownable {
             );
         }
         dealsMapping[_dealId].availablePayment -= _withdrawAmount;
-
     }
 
-    function additionalPayment(uint256 _dealId, uint256 _payment) external payable {
-        require(dealsMapping[_dealId].creator == msg.sender, "only recruiter can add payments");
+    function additionalPayment(
+        uint256 _dealId,
+        uint256 _payment
+    ) external payable {
+        require(
+            dealsMapping[_dealId].creator == msg.sender,
+            "only recruiter can add payments"
+        );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         if (_paymentToken == address(0)) {
             require(
@@ -112,14 +124,12 @@ contract HonestPay is Ownable {
             dealsMapping[_dealId].totalPayment += _payment;
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.transferFrom(
-                msg.sender,
-                address(this),
-                _payment);
-                dealsMapping[_dealId].availablePayment += _payment;
-                dealsMapping[_dealId].totalPayment += _payment;
+            paymentToken.transferFrom(msg.sender, address(this), _payment);
+            dealsMapping[_dealId].availablePayment += _payment;
+            dealsMapping[_dealId].totalPayment += _payment;
         }
     }
+
 
         function completeOrCancelJob(uint256 _dealId, bool _complete, uint256 _rating) external {
             if(dealsMapping[_dealId].creator == msg.sender){
@@ -136,7 +146,17 @@ contract HonestPay is Ownable {
         uint256 _deadline,
         uint _nonce
     ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_employer, _creator, _paymentToken, _totalAmount, _deadline, _nonce));
+        return
+            keccak256(
+                abi.encodePacked(
+                    _employer,
+                    _creator,
+                    _paymentToken,
+                    _totalAmount,
+                    _deadline,
+                    _nonce
+                )
+            );
     }
 
     function getEthSignedMessageHash(
@@ -148,9 +168,13 @@ contract HonestPay is Ownable {
         */
         return
             keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n32",
+                    _messageHash
+                )
             );
     }
+
 
     function verify(
         address _signer,
