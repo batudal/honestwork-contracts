@@ -11,14 +11,12 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 contract HonestPay is Ownable {
     enum Status {
         OfferInitiated,
-        DownpaymentAvailable,
-        OngoingJob,
         JobCompleted,
         JobCancelled
     }
 
     struct Deal {
-        address employer;
+        address recruiter;
         address creator;
         address paymentToken;
         uint256 totalPayment;
@@ -43,8 +41,13 @@ contract HonestPay is Ownable {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _deadline
+        uint256 _deadline,
+        uint256 _nonce,
+        bytes memory signature
     ) external payable returns (bool) {
+        if(msg.sender == _recruiter) {
+            require(verify(_creator, _recruiter, _creator, _paymentToken, _totalPayment, _deadline, _nonce, signature));
+        }
         dealIds.increment();
         uint256 _dealId = dealIds.current();
         dealsMapping[_dealId] = Deal(
@@ -79,7 +82,7 @@ contract HonestPay is Ownable {
 
     function receivePayment(uint256 _dealId, uint256 _withdrawAmount) external {
         require(dealsMapping[_dealId].creator == msg.sender, "only creator can receive payments");
-        require(dealsMapping[_dealId].withdrawAmount > _withdrawAmount, "desired payment is not available yet");
+        require(dealsMapping[_dealId].availablePayment >= _withdrawAmount, "desired payment is not available yet");
             address _paymentToken = dealsMapping[_dealId].paymentToken;
             if (_paymentToken == address(0)) {
             (bool payment, ) = payable(dealsMapping[_dealId].creator).call{value: _withdrawAmount}("");
@@ -90,7 +93,7 @@ contract HonestPay is Ownable {
             paymentToken.transferFrom(
                 address(this),
                 msg.sender,
-                (_totalPayment)
+                (_withdrawAmount)
             );
         }
         dealsMapping[_dealId].availablePayment -= _withdrawAmount;
@@ -118,12 +121,14 @@ contract HonestPay is Ownable {
         }
     }
 
-        function completeJob() external {
-            //require(dealsMapping[_dealId].totalPayment <=)
+        function completeOrCancelJob(uint256 _dealId, bool _complete, uint256 _rating) external {
+            if(dealsMapping[_dealId].creator == msg.sender){
+
+            }
         }
 
 
-        function getOfferHash(
+    function getOfferHash(
         address _employer,
         address _creator,
         address _paymentToken,
@@ -146,8 +151,47 @@ contract HonestPay is Ownable {
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
             );
     }
+
+    function verify(
+        address _signer,
+        address _recruitor,
+        address _creator,
+        address _paymentToken,
+        uint256 _totalAmount,
+        uint256 _deadline,
+        uint _nonce,
+        bytes memory signature
+    ) public pure returns (bool) {
+        bytes32 messageHash = getOfferHash(_recruitor, _creator, _paymentToken, _totalAmount, _deadline, _nonce);
+        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
+
+        return recoverSigner(ethSignedMessageHash, signature) == _signer;
+    }
+
+    function recoverSigner(
+        bytes32 _ethSignedMessageHash,
+        bytes memory _signature
+    ) public pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+        return ecrecover(_ethSignedMessageHash, v, r, s);
+    }
+    
+    function splitSignature(
+        bytes memory sig
+    ) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "invalid signature length");
+
+        assembly {
+
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
     
     }
+
+}
 
 
 
