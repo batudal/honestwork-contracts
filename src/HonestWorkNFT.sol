@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "./Payments/HonestPayLock.sol";
 
 //push deneme
 //cant bind more than one NFT
@@ -22,11 +23,13 @@ contract HonestWorkNFT is Ownable, ERC721 {
     //TBD
     uint256 public tier3Fee = 1000 ether;
     bytes32 public whitelistRoot;
-    mapping(address => bool) public whitelistCap;
 
     //@notice  2 1- tier1  2-tier2 3-tier3
+    mapping(address => bool) public whitelistCap;
     mapping(uint256 => uint256) public tier;
-    mapping(uint256 => bool) public soulbound;
+    mapping(uint256 => uint256) public grossRevenue;
+
+    HonestPayLock public honestPayLock;
 
     constructor() ERC721("HonestWork", "HW") {}
 
@@ -37,7 +40,6 @@ contract HonestWorkNFT is Ownable, ERC721 {
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
         _mint(recipient, newItemId);
         tier[newItemId] = 1;
-        soulbound[newItemId] = false;
 
         return newItemId;
     }
@@ -57,26 +59,10 @@ contract HonestWorkNFT is Ownable, ERC721 {
         whitelistCap[msg.sender] = true;
         _mint(recipient, newItemId);
         tier[newItemId] = 1;
-        soulbound[newItemId] = false;
 
         return newItemId;
     }
 
-    function bindToken(uint256 _tokenId) external {
-        require(
-            ownerOf(_tokenId) == msg.sender,
-            "only owned tokens can be claimed"
-        );
-        soulbound[_tokenId] = true;
-    }
-
-    function unbindToken(uint256 _tokenId) external {
-        require(
-            ownerOf(_tokenId) == msg.sender,
-            "only owned tokens can be disclaimed"
-        );
-        soulbound[_tokenId] = false;
-    }
 
     function upgradeToken(uint256 _tokenId, uint256 _tier) external payable {
         require(
@@ -115,5 +101,19 @@ contract HonestWorkNFT is Ownable, ERC721 {
 
     function changeTierThreeFee(uint256 _newFee) external onlyOwner {
         tier3Fee = _newFee;
+    }
+
+    function recordGrossRevenue(uint256 _nftId, uint256  _revenue) external onlyHonestPay {
+        grossRevenue[_nftId] += _revenue;
+    }
+
+    modifier onlyHonestPay{
+        require(msg.sender == address(honestPayLock), "only HonestWork contract can record gross revenue");
+        _;
+
+    }
+
+    function setHonestPayLock(HonestPayLock _honestPayLock) external onlyOwner {
+        honestPayLock = _honestPayLock;
     }
 }
