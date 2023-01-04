@@ -91,7 +91,7 @@ contract HonestPayLock is Ownable {
 
     }
 
-    function unlockPayment(uint256 _dealId, uint256 _paymentAmount, uint256 _rating) external {
+    function unlockPayment(uint256 _dealId, uint256 _paymentAmount, uint256 _rating, uint256 _recruiterNFT) external {
         require(
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can unlock payments"
@@ -104,7 +104,10 @@ contract HonestPayLock is Ownable {
             "can not go above total payment, use additional payment function pls"
         );
         dealsMapping[_dealId].creatorRating.push(_rating);
-        
+
+        if(hw721.balanceOf(msg.sender) == 1) {
+        hw721.recordGrossRevenue(_recruiterNFT, _paymentAmount);
+        }
         
     }
 
@@ -132,7 +135,7 @@ contract HonestPayLock is Ownable {
     dealsMapping[_dealId].status = Status.JobCancelled;
     }
 
-    function receivePayment(uint256 _dealId, uint256 _withdrawAmount, uint256 _rating) external {
+    function receivePayment(uint256 _dealId, uint256 _withdrawAmount, uint256 _rating, uint256 _creatorNFT) external {
         require(dealsMapping[_dealId].creator == msg.sender, "only creator can receive payments");
         require(dealsMapping[_dealId].availablePayment >= _withdrawAmount, "desired payment is not available yet");
             address _paymentToken = dealsMapping[_dealId].paymentToken;
@@ -165,8 +168,9 @@ contract HonestPayLock is Ownable {
                 (_withdrawAmount * honestWorkSuccessFee /100)
             );
         }
-
-
+        if(hw721.balanceOf(msg.sender) == 1) {
+        hw721.recordGrossRevenue(_creatorNFT, _withdrawAmount);
+        }
         if(dealsMapping[_dealId].paidAmount >= dealsMapping[_dealId].totalPayment) {
             dealsMapping[_dealId].status = Status.JobCompleted;
         }
@@ -174,7 +178,8 @@ contract HonestPayLock is Ownable {
 
     function additionalPayment(
         uint256 _dealId,
-        uint256 _payment
+        uint256 _payment,
+        uint256 _recruiterNFT
     ) external payable {
         require(dealsMapping[_dealId].status == Status.OfferInitiated, "job should be active");
         require(
@@ -194,6 +199,10 @@ contract HonestPayLock is Ownable {
             paymentToken.transferFrom(msg.sender, address(this), _payment);
             dealsMapping[_dealId].availablePayment += _payment;
             dealsMapping[_dealId].totalPayment += _payment;
+        }
+
+        if(hw721.balanceOf(msg.sender) == 1) {
+        hw721.recordGrossRevenue(_recruiterNFT, _payment);
         }
     }
 
