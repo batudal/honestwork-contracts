@@ -152,7 +152,7 @@ contract HonestPayLock is Ownable {
             );
             paymentToken.approve(
                 honestWorkFeeCollector,
-                _withdrawAmount * (100 - honestWorkSuccessFee) /100
+                _withdrawAmount * honestWorkSuccessFee /100
             );
             paymentToken.transferFrom(
                 address(this),
@@ -269,6 +269,44 @@ contract HonestPayLock is Ownable {
             v := byte(0, mload(add(sig, 96)))
         }
     
+    }
+
+    //Getters
+
+    function getDeal(uint256 _dealId) external view returns(Deal memory) {
+        return dealsMapping[_dealId];
+    }
+
+    function getCreator(uint256 _dealId) external view returns(address) {
+        return dealsMapping[_dealId].creator;
+    }
+
+    function getRecruiter(uint256 _dealId) external view returns(address) {
+        return dealsMapping[_dealId].recruiter;
+    }
+
+    function getPaymentToken(uint256 _dealId) external view returns(address) {
+        return dealsMapping[_dealId].paymentToken;
+    }
+
+    function getPaidAmount(uint256 _dealId) external view returns(uint256) {
+        return dealsMapping[_dealId].paidAmount;
+    }
+
+    function getAvailablePayment(uint256 _dealId) external view returns(uint256) {
+        return dealsMapping[_dealId].availablePayment;
+    }
+
+    function getJobCompletionRate(uint256 _dealId) external view returns(uint256, uint256) {
+        return (dealsMapping[_dealId].paidAmount, dealsMapping[_dealId].totalPayment);
+    }
+
+    function getRecruiterRating(uint256 _dealId) external view returns(uint256[] memory) {
+        return (dealsMapping[_dealId].recruiterRating);
+    }
+    
+    function getCreatorRating(uint256 _dealId) external view returns(uint256[] memory) {
+        return (dealsMapping[_dealId].creatorRating);
     }
 
 }
