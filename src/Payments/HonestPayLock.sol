@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "../Registry/IHWRegistry.sol";
+import "../HonestWorkNFT.sol";
 
 //should I add a NFT check to create deal?
 //how should the job be complted or cancelled?
@@ -22,22 +23,26 @@ contract HonestPayLock is Ownable {
         address paymentToken;
         uint256 totalPayment;
         uint256 paidAmount;
-        uint256 deadline;
         uint256 availablePayment;
         Status status;
         uint256[] recruiterRating;
         uint256[] creatorRating;
     }
     IHWRegistry public registry;
+    HonestWorkNFT public hw721;
+
     mapping(uint256 => Deal) public dealsMapping;
     uint256 public honestWorkSuccessFee;
+    address public honestWorkFeeCollector;
 
     using Counters for Counters.Counter;
     Counters.Counter public dealIds;
 
-    constructor(address _Registry) Ownable() {
+    constructor(address _registry, address _HW721, address _feeCollector) Ownable() {
         honestWorkSuccessFee = 5;
-        registry = IHWRegistry(_Registry);
+        registry = IHWRegistry(_registry);
+        hw721 = HonestWorkNFT(_HW721);
+        honestWorkFeeCollector = _feeCollector;
     }
 
     function createDeal(
@@ -45,12 +50,11 @@ contract HonestPayLock is Ownable {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _deadline,
         uint256 _nonce,
         bytes memory signature
     ) external payable returns (bool) {
         if(msg.sender == _recruiter) {
-            require(verify(_creator, _recruiter, _creator, _paymentToken, _totalPayment, _deadline, _nonce, signature));
+            require(verify(_creator, _recruiter, _creator, _paymentToken, _totalPayment, _nonce, signature));
         }
 
         require(registry.isAllowedAmount(_paymentToken, _totalPayment), "the token you are trying to pay with is either not whitelisted or you are exceeding the allowed amount");
@@ -64,7 +68,6 @@ contract HonestPayLock is Ownable {
             _paymentToken,
             _totalPayment,
             0,
-            _deadline,
             0,
             Status.OfferInitiated,
             arr1,
@@ -137,18 +140,29 @@ contract HonestPayLock is Ownable {
             dealsMapping[_dealId].availablePayment -= _withdrawAmount;
             dealsMapping[_dealId].recruiterRating.push(_rating);
             if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(dealsMapping[_dealId].creator).call{value: _withdrawAmount}("");
+            (bool payment, ) = payable(dealsMapping[_dealId].creator).call{value: _withdrawAmount * (100 - honestWorkSuccessFee) /100}("");
             require(payment, "Failed to send payment");
+            (bool successFee, ) = payable(honestWorkFeeCollector).call{value: _withdrawAmount * honestWorkSuccessFee /100}("");
+            require(successFee, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
             paymentToken.approve(
                 dealsMapping[_dealId].creator,
-                _withdrawAmount
+                _withdrawAmount * (100 - honestWorkSuccessFee) /100
+            );
+            paymentToken.approve(
+                honestWorkFeeCollector,
+                _withdrawAmount * (100 - honestWorkSuccessFee) /100
             );
             paymentToken.transferFrom(
                 address(this),
                 msg.sender,
-                (_withdrawAmount)
+                (_withdrawAmount * (100 - honestWorkSuccessFee) /100)
+            );
+            paymentToken.transferFrom(
+                address(this),
+                honestWorkFeeCollector,
+                (_withdrawAmount * honestWorkSuccessFee /100)
             );
         }
 
@@ -188,7 +202,6 @@ contract HonestPayLock is Ownable {
         address _creator,
         address _paymentToken,
         uint256 _totalAmount,
-        uint256 _deadline,
         uint _nonce
     ) public pure returns (bytes32) {
         return
@@ -198,7 +211,6 @@ contract HonestPayLock is Ownable {
                     _creator,
                     _paymentToken,
                     _totalAmount,
-                    _deadline,
                     _nonce
                 )
             );
@@ -227,11 +239,10 @@ contract HonestPayLock is Ownable {
         address _creator,
         address _paymentToken,
         uint256 _totalAmount,
-        uint256 _deadline,
         uint _nonce,
         bytes memory signature
     ) internal pure returns (bool) {
-        bytes32 messageHash = getOfferHash(_recruiter, _creator, _paymentToken, _totalAmount, _deadline, _nonce);
+        bytes32 messageHash = getOfferHash(_recruiter, _creator, _paymentToken, _totalAmount, _nonce);
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
         return recoverSigner(ethSignedMessageHash, signature) == _signer;
