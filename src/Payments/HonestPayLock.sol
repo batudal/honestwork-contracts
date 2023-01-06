@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
 
-//should I add a NFT check to create deal?
-//how should the job be complted or cancelled?
-//if we do not bind nfts with ratings, rating system becomes bypassable.
+
 
 contract HonestPayLock is Ownable {
     enum Status {
@@ -22,6 +20,7 @@ contract HonestPayLock is Ownable {
         address creator;
         address paymentToken;
         uint256 totalPayment;
+        uint256 successFee;
         uint256 paidAmount;
         uint256 availablePayment;
         Status status;
@@ -31,6 +30,8 @@ contract HonestPayLock is Ownable {
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
 
+    mapping(uint256 => uint256) public additionalPaymentLimit;
+    uint256 public extraPaymentLimit;
     mapping(uint256 => Deal) public dealsMapping;
     uint256 public honestWorkSuccessFee;
     address public honestWorkFeeCollector;
@@ -86,6 +87,7 @@ contract HonestPayLock is Ownable {
             _totalPayment,
             0,
             0,
+            0,
             Status.OfferInitiated,
             arr1,
             arr2
@@ -113,6 +115,10 @@ contract HonestPayLock is Ownable {
         uint256 _recruiterNFT
     ) external {
         require(
+            _rating >= 0 && _rating <= 10,
+            "rating must be between 0 and 10"
+        );
+        require(
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can unlock payments"
         );
@@ -124,7 +130,7 @@ contract HonestPayLock is Ownable {
                 dealsMapping[_dealId].availablePayment,
             "can not go above total payment, use additional payment function pls"
         );
-        dealsMapping[_dealId].creatorRating.push(_rating);
+        dealsMapping[_dealId].creatorRating.push(_rating * 100);
 
         if (hw721.balanceOf(msg.sender) == 1) {
             hw721.recordGrossRevenue(_recruiterNFT, _paymentAmount);
@@ -163,13 +169,17 @@ contract HonestPayLock is Ownable {
 
         dealsMapping[_dealId].status = Status.JobCancelled;
     }
-    // record the success fee and write a function to claim them at once
+
     function claimPayment(
         uint256 _dealId,
         uint256 _withdrawAmount,
         uint256 _rating,
         uint256 _creatorNFT
     ) external {
+        require(
+            _rating >= 0 && _rating <= 10,
+            "rating must be between 0 and 10"
+        );
         require(
             dealsMapping[_dealId].creator == msg.sender,
             "only creator can receive payments"
@@ -181,7 +191,10 @@ contract HonestPayLock is Ownable {
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         dealsMapping[_dealId].paidAmount += _withdrawAmount;
         dealsMapping[_dealId].availablePayment -= _withdrawAmount;
-        dealsMapping[_dealId].recruiterRating.push(_rating);
+        dealsMapping[_dealId].recruiterRating.push(_rating * 100);
+        dealsMapping[_dealId].successFee +=
+            (_withdrawAmount * honestWorkSuccessFee) /
+            100;
         if (_paymentToken == address(0)) {
             (bool payment, ) = payable(dealsMapping[_dealId].creator).call{
                 value: (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
@@ -197,19 +210,10 @@ contract HonestPayLock is Ownable {
                 dealsMapping[_dealId].creator,
                 (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
             );
-            paymentToken.approve(
-                honestWorkFeeCollector,
-                (_withdrawAmount * honestWorkSuccessFee) / 100
-            );
             paymentToken.transferFrom(
                 address(this),
                 msg.sender,
                 ((_withdrawAmount * (100 - honestWorkSuccessFee)) / 100)
-            );
-            paymentToken.transferFrom(
-                address(this),
-                honestWorkFeeCollector,
-                ((_withdrawAmount * honestWorkSuccessFee) / 100)
             );
         }
         if (hw721.balanceOf(msg.sender) == 1) {
@@ -222,12 +226,21 @@ contract HonestPayLock is Ownable {
             dealsMapping[_dealId].status = Status.JobCompleted;
         }
     }
-    // add limit to additional payments -- 3
+
     function additionalPayment(
         uint256 _dealId,
         uint256 _payment,
-        uint256 _recruiterNFT
+        uint256 _recruiterNFT,
+        uint256 _rating
     ) external payable {
+        require(
+            _rating >= 0 && _rating <= 10,
+            "rating must be between 0 and 10"
+        );
+        require(
+            additionalPaymentLimit[_dealId] <= extraPaymentLimit,
+            "you can not make more than 3 additional payments"
+        );
         require(
             dealsMapping[_dealId].status == Status.OfferInitiated,
             "job should be active"
@@ -254,6 +267,9 @@ contract HonestPayLock is Ownable {
         if (hw721.balanceOf(msg.sender) == 1) {
             hw721.recordGrossRevenue(_recruiterNFT, _payment);
         }
+
+        additionalPaymentLimit[_dealId] += 1;
+        dealsMapping[_dealId].creatorRating.push(_rating * 100);
     }
 
     function getOfferHash(
@@ -280,10 +296,6 @@ contract HonestPayLock is Ownable {
         pure
         returns (bytes32)
     {
-        /*
-        Signature is produced by signing a keccak256 hash with the following format:
-        "\x19Ethereum Signed Message\n" + len(msg) + msg
-        */
         return
             keccak256(
                 abi.encodePacked(
@@ -370,18 +382,17 @@ contract HonestPayLock is Ownable {
     {
         return dealsMapping[_dealId].availablePayment;
     }
-    // return a number compatible with front end
+
     function getJobCompletionRate(uint256 _dealId)
         external
         view
-        returns (uint256, uint256)
+        returns (uint256)
     {
-        return (
-            dealsMapping[_dealId].paidAmount,
-            dealsMapping[_dealId].totalPayment
-        );
+        return ((dealsMapping[_dealId].paidAmount * 100) /
+            dealsMapping[_dealId].totalPayment);
     }
-    // get the average scale up
+
+
     function getRecruiterRating(uint256 _dealId)
         external
         view
@@ -398,6 +409,48 @@ contract HonestPayLock is Ownable {
         return (dealsMapping[_dealId].creatorRating);
     }
 
+    function getAvgCreatorRating(uint256 _dealId)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 sum;
+        for (
+            uint256 i = 0;
+            i <= dealsMapping[_dealId].creatorRating.length;
+            i++
+        ) {
+            sum += dealsMapping[_dealId].creatorRating[i];
+        }
+        return (sum / dealsMapping[_dealId].creatorRating.length);
+    }
+
+    function getAvgRecruiterRating(uint256 _dealId)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 sum;
+        for (
+            uint256 i = 0;
+            i <= dealsMapping[_dealId].recruiterRating.length;
+            i++
+        ) {
+            sum += dealsMapping[_dealId].recruiterRating[i];
+        }
+        return (sum / dealsMapping[_dealId].recruiterRating.length);
+    }
+
+    function getTotalSuccessFee()
+        external
+        view
+        returns (uint256 totalSuccessFee)
+    {
+        for (uint256 i = 1; i <= dealIds.current(); i++) {
+            totalSuccessFee += dealsMapping[i].successFee;
+        }
+    }
+
     // admin functions
 
     function changeSuccessFee(uint256 _fee) external onlyOwner {
@@ -412,8 +465,23 @@ contract HonestPayLock is Ownable {
         registry = _registry;
     }
 
+    function claimSuccessFee(uint256 _dealId, address _feeCollector)
+        external
+        onlyOwner
+    {
+        IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
+        paymentToken.transfer(_feeCollector, dealsMapping[_dealId].successFee);
+    }
+
+    function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
+        for (uint256 i = 1; i <= dealIds.current(); i++) {
+            uint256 successFee = dealsMapping[i].successFee;
+            IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
+            paymentToken.transfer(_feeCollector, successFee);
+        }
+    }
+
+    function changeExtraPaymentLimit(uint256 _limit) external onlyOwner {
+        extraPaymentLimit = _limit;
+    }
 }
-
- 
-
-
