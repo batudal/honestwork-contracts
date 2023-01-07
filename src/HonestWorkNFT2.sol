@@ -14,7 +14,7 @@ contract HonestWorkNFT2 is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     //TBD
-    uint256 public MINT_FEE = 10 ether;
+    uint256 public MINT_FEE = 1 ether;
 
     uint256 public constant TOKEN_CAP = 10000;
     // TBD
@@ -66,7 +66,7 @@ contract HonestWorkNFT2 is ERC721, ERC721Enumerable, Ownable {
         return newItemId;
     }
 
-
+    //solve price fluctuation
     function upgradeToken(uint256 _tokenId, uint256 _tier) external payable {
         require(
             ownerOf(_tokenId) == msg.sender,
@@ -120,7 +120,7 @@ contract HonestWorkNFT2 is ERC721, ERC721Enumerable, Ownable {
         honestPayLock = _honestPayLock;
     }
 
-        function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
         override(ERC721, ERC721Enumerable)
     {

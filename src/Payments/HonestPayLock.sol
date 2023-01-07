@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
+import "forge-std/console.sol";
 
 
 
@@ -30,11 +31,17 @@ contract HonestPayLock is Ownable {
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
 
-    mapping(uint256 => uint256) public additionalPaymentLimit;
+    
     uint256 public extraPaymentLimit;
-    mapping(uint256 => Deal) public dealsMapping;
     uint256 public honestWorkSuccessFee;
     address public honestWorkFeeCollector;
+    
+
+    mapping(uint256 => uint256) public additionalPaymentLimit;
+    mapping(uint256 => Deal) public dealsMapping;
+
+
+
 
     using Counters for Counters.Counter;
     Counters.Counter public dealIds;
@@ -55,22 +62,22 @@ contract HonestPayLock is Ownable {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _nonce,
-        bytes memory signature
-    ) external payable returns (bool) {
-        if (msg.sender == _recruiter) {
-            require(
-                verify(
-                    _creator,
-                    _recruiter,
-                    _creator,
-                    _paymentToken,
-                    _totalPayment,
-                    _nonce,
-                    signature
-                )
-            );
-        }
+        uint256 _nonce
+        //bytes memory signature
+    ) external payable returns (uint256) {
+        // if (msg.sender == _recruiter) {
+        //     require(
+        //         verify(
+        //             _creator,
+        //             _recruiter,
+        //             _creator,
+        //             _paymentToken,
+        //             _totalPayment,
+        //             _nonce,
+        //             signature
+        //         )
+        //     );
+        // }
 
         require(
             registry.isAllowedAmount(_paymentToken, _totalPayment),
@@ -94,7 +101,7 @@ contract HonestPayLock is Ownable {
         );
         if (_paymentToken == address(0)) {
             require(
-                msg.value > _totalPayment,
+                msg.value >= _totalPayment,
                 "employer should deposit the payment"
             );
         } else {
@@ -105,7 +112,7 @@ contract HonestPayLock is Ownable {
                 (_totalPayment)
             );
         }
-        return true;
+        return _dealId;
     }
 
     function unlockPayment(
@@ -150,7 +157,7 @@ contract HonestPayLock is Ownable {
         uint256 amountToBeWithdrawn = dealsMapping[_dealId].totalPayment -
             dealsMapping[_dealId].paidAmount;
         if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(dealsMapping[_dealId].creator).call{
+            (bool payment, ) = payable(dealsMapping[_dealId].recruiter).call{
                 value: amountToBeWithdrawn
             }("");
             require(payment, "Failed to send payment");
@@ -200,10 +207,6 @@ contract HonestPayLock is Ownable {
                 value: (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
             }("");
             require(payment, "Failed to send payment");
-            (bool successFee, ) = payable(honestWorkFeeCollector).call{
-                value: (_withdrawAmount * honestWorkSuccessFee) / 100
-            }("");
-            require(successFee, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
             paymentToken.approve(
@@ -417,7 +420,7 @@ contract HonestPayLock is Ownable {
         uint256 sum;
         for (
             uint256 i = 0;
-            i <= dealsMapping[_dealId].creatorRating.length;
+            i < dealsMapping[_dealId].creatorRating.length;
             i++
         ) {
             sum += dealsMapping[_dealId].creatorRating[i];
@@ -449,6 +452,11 @@ contract HonestPayLock is Ownable {
         for (uint256 i = 1; i <= dealIds.current(); i++) {
             totalSuccessFee += dealsMapping[i].successFee;
         }
+    }
+
+
+    function getDealStatus(uint256 _dealId) external view returns(uint) {
+        return uint(dealsMapping[_dealId].status);
     }
 
     // admin functions
