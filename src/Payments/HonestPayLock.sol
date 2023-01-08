@@ -40,7 +40,15 @@ contract HonestPayLock is Ownable {
     mapping(uint256 => uint256) public additionalPaymentLimit;
     mapping(uint256 => Deal) public dealsMapping;
 
-
+    event OfferCreatedEvent(address indexed _recruiter, address indexed _creator, uint256 indexed _totalPayment, address _paymentToken); 
+    event paymentUnlockedEvent(uint256 _dealId,address indexed _recruiter, uint256 indexed _unlockedAmount);
+    event claimPaymentEvent(uint256 indexed _dealId,address indexed _creator, uint256 indexed _paymentReceived);
+    event additionalPaymentEvent(uint256 indexed _dealId, address indexed _recruiter, uint256 indexed _payment);
+    event withdrawPaymentEvent(uint256 indexed _dealId, Status status);
+    event successFeeChangedEvent(uint256 _newSuccessFee);
+    event claimSuccessFeeEvent(uint256 indexed _dealId, uint256 _amount);
+    event changeExtraPaymentLimitEvent(uint256 _newPaymentLimit);
+    event claimSuccessFeeAllEvent(address _collector);
 
 
     using Counters for Counters.Counter;
@@ -112,6 +120,7 @@ contract HonestPayLock is Ownable {
                 (_totalPayment)
             );
         }
+        emit OfferCreatedEvent(_recruiter, _creator, _totalPayment, _paymentToken);
         return _dealId;
     }
 
@@ -142,6 +151,7 @@ contract HonestPayLock is Ownable {
         if (hw721.balanceOf(msg.sender) == 1) {
             hw721.recordGrossRevenue(_recruiterNFT, _paymentAmount);
         }
+        emit paymentUnlockedEvent(_dealId, dealsMapping[_dealId].recruiter, _paymentAmount);
     }
 
     function withdrawPayment(uint256 _dealId) external {
@@ -152,7 +162,7 @@ contract HonestPayLock is Ownable {
         require(
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can withdraw payments"
-        );
+        );  
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         uint256 amountToBeWithdrawn = dealsMapping[_dealId].totalPayment -
             dealsMapping[_dealId].paidAmount;
@@ -175,6 +185,7 @@ contract HonestPayLock is Ownable {
         }
 
         dealsMapping[_dealId].status = Status.JobCancelled;
+        emit withdrawPaymentEvent(_dealId, dealsMapping[_dealId].status);
     }
 
     function claimPayment(
@@ -228,6 +239,8 @@ contract HonestPayLock is Ownable {
         ) {
             dealsMapping[_dealId].status = Status.JobCompleted;
         }
+
+        emit claimPaymentEvent(_dealId, dealsMapping[_dealId].creator, _withdrawAmount);
     }
 
     function additionalPayment(
@@ -273,6 +286,7 @@ contract HonestPayLock is Ownable {
 
         additionalPaymentLimit[_dealId] += 1;
         dealsMapping[_dealId].creatorRating.push(_rating * 100);
+        emit additionalPaymentEvent(_dealId, dealsMapping[_dealId].recruiter, _payment);
     }
 
     function getOfferHash(
@@ -463,6 +477,7 @@ contract HonestPayLock is Ownable {
 
     function changeSuccessFee(uint256 _fee) external onlyOwner {
         honestWorkSuccessFee = _fee;
+        emit successFeeChangedEvent(_fee);
     }
 
     function changeFeeCollectorAddress(address _collector) external onlyOwner {
@@ -479,6 +494,7 @@ contract HonestPayLock is Ownable {
     {
         IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
         paymentToken.transfer(_feeCollector, dealsMapping[_dealId].successFee);
+        emit claimSuccessFeeEvent(_dealId,dealsMapping[_dealId].successFee );
     }
 
     function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
@@ -487,9 +503,11 @@ contract HonestPayLock is Ownable {
             IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
             paymentToken.transfer(_feeCollector, successFee);
         }
+        emit claimSuccessFeeAllEvent(_feeCollector);
     }
 
     function changeExtraPaymentLimit(uint256 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
+        emit changeExtraPaymentLimitEvent(_limit);
     }
 }
