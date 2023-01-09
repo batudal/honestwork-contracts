@@ -1,6 +1,8 @@
-1) should upgrading mean binding at the same time? currently no
-2) how should we receive payments? only native or other custom tokens as well?
-3) will we premint some?
+
+3) will we premint some NFT?
 4) what privelages will we have as the owner of the contract? should we be able to
 5) should an employer be able to change creator after initating the deal? if so when?
 6) When should the employers be able to pull their money if job is not completed or they have a change of mind?
+
+
+// both parties cancel function

@@ -5,6 +5,7 @@ import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Counters.sol";
 import "../Registry/IHWRegistry.sol";
+import "../utils/IUniswapV2Router01.sol";
 
 /// @title Job Listing Module for HonestWork
 /// @author @takez0_o
@@ -12,6 +13,10 @@ import "../Registry/IHWRegistry.sol";
 /// @dev This contract is owned by the HonestWork contract.
 /// @dev It is open-ended contract used specifically for the job listing payments.
 /// @dev Imports are relative since abigen didn't want to work with my remappings. :P
+
+
+// polygon usdc 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
 contract JobListing is Ownable {
     struct Payment {
         address token; // 0x0 for ETH
@@ -19,12 +24,18 @@ contract JobListing is Ownable {
         uint256 listingDate;
     }
 
+
+
+
     IHWRegistry public registry;
+    IUniswapV2Router01 public router;
+    IERC20 public usdc = IERC20(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
 
     mapping(address => Payment[]) payments;
 
-    constructor(address _registry) {
+    constructor(address _registry, address _router) {
         registry = IHWRegistry(_registry);
+        router = IUniswapV2Router01(_router);
     }
 
     modifier checkWhitelist(address _token) {
@@ -53,12 +64,18 @@ contract JobListing is Ownable {
         emit PaymentAdded(_token, _amount);
     }
 
-    function payForListingEth() external payable {
+    function payForListingEth() external payable returns(uint[] memory) {
         require(msg.value > 0, "Can't pay 0 ETH");
         payments[msg.sender].push(
             Payment(address(0), msg.value, block.timestamp)
         );
+
+        address[] memory path = new address[](2);
+        path[0] = router.WETH();
+        path[1] = address(usdc);
+        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(1, path , address(this), block.timestamp + 1000);
         emit PaymentAddedETH(msg.value);
+        return amounts;
     }
 
     function withdrawEarnings(
@@ -90,6 +107,7 @@ contract JobListing is Ownable {
             );
         }
     }
+
 
     event PaymentAdded(address indexed _token, uint256 _amount);
     event PaymentAddedETH(uint256 _amount);

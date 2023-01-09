@@ -124,8 +124,6 @@ contract HonestPayLockTest is Test {
         uint256 balanceAfter = recruiter1.balance;
         assertEq(balanceAfter - balanceBefore, 10 ether);
 
-
-
     }
 
 }

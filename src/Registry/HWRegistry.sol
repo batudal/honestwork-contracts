@@ -43,6 +43,7 @@ contract HWRegistry is Ownable {
         address _address,
         uint256 _maxAllowed
     ) external onlyOwner returns (bool) {
+        
         whitelisted[getWhitelistedID(_address)].maxAllowed = _maxAllowed;
         emit WhitelistedUpdated(_address, _maxAllowed);
         return true;

@@ -39,7 +39,7 @@ contract HonestPayLock is Ownable {
 
     mapping(uint256 => uint256) public additionalPaymentLimit;
     mapping(uint256 => Deal) public dealsMapping;
-
+    // add dealId to OfferCreatedEvent ??
     event OfferCreatedEvent(address indexed _recruiter, address indexed _creator, uint256 indexed _totalPayment, address _paymentToken); 
     event paymentUnlockedEvent(uint256 _dealId,address indexed _recruiter, uint256 indexed _unlockedAmount);
     event claimPaymentEvent(uint256 indexed _dealId,address indexed _creator, uint256 indexed _paymentReceived);
