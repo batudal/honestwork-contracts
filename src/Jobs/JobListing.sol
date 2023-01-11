@@ -6,6 +6,7 @@ import "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../../lib/openzeppelin-contracts/contracts/utils/Counters.sol";
 import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
+import "../utils/IPool.sol";
 
 /// @title Job Listing Module for HonestWork
 /// @author @takez0_o
@@ -30,6 +31,7 @@ contract JobListing is Ownable {
     IHWRegistry public registry;
     IUniswapV2Router01 public router;
     IERC20 public usdc = IERC20(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
+    IPool public pool = IPool(0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827);
 
     mapping(address => Payment[]) payments;
 
@@ -64,7 +66,7 @@ contract JobListing is Ownable {
         emit PaymentAdded(_token, _amount);
     }
 
-    function payForListingEth() external payable returns(uint[] memory) {
+    function payForListingEth(uint256 _minTokensOut, uint256 _allowedDelay) external payable returns(uint[] memory) {
         require(msg.value > 0, "Can't pay 0 ETH");
         payments[msg.sender].push(
             Payment(address(0), msg.value, block.timestamp)
@@ -73,7 +75,7 @@ contract JobListing is Ownable {
         address[] memory path = new address[](2);
         path[0] = router.WETH();
         path[1] = address(usdc);
-        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(1, path , address(this), block.timestamp + 1000);
+        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(_minTokensOut, path , address(this), block.timestamp + _allowedDelay);
         emit PaymentAddedETH(msg.value);
         return amounts;
     }
@@ -106,6 +108,13 @@ contract JobListing is Ownable {
                 )
             );
         }
+    }
+
+    function getMaticPrice(uint256 _amount) external view returns(uint) {
+        uint256 reserve1;
+        uint256 reserve2;
+        (reserve1, reserve2, ) = pool.getReserves();
+        return router.quote(_amount, reserve1, reserve2);
     }
 
 
