@@ -1,30 +1,16 @@
-
-                                                                                                                                                                                     
-                                                                                                                                                                                     
-// HHHHHHHHH     HHHHHHHHH                                                                                 tttt               PPPPPPPPPPPPPPPPP                                         
-// H:::::::H     H:::::::H                                                                              ttt:::t               P::::::::::::::::P                                        
-// H:::::::H     H:::::::H                                                                              t:::::t               P::::::PPPPPP:::::P                                       
-// HH::::::H     H::::::HH                                                                              t:::::t               PP:::::P     P:::::P                                      
-//   H:::::H     H:::::H     ooooooooooo   nnnn  nnnnnnnn        eeeeeeeeeeee        ssssssssss   ttttttt:::::ttttttt           P::::P     P:::::Paaaaaaaaaaaaayyyyyyy           yyyyyyy
-//   H:::::H     H:::::H   oo:::::::::::oo n:::nn::::::::nn    ee::::::::::::ee    ss::::::::::s  t:::::::::::::::::t           P::::P     P:::::Pa::::::::::::ay:::::y         y:::::y 
-//   H::::::HHHHH::::::H  o:::::::::::::::on::::::::::::::nn  e::::::eeeee:::::eess:::::::::::::s t:::::::::::::::::t           P::::PPPPPP:::::P aaaaaaaaa:::::ay:::::y       y:::::y  
-//   H:::::::::::::::::H  o:::::ooooo:::::onn:::::::::::::::ne::::::e     e:::::es::::::ssss:::::stttttt:::::::tttttt           P:::::::::::::PP           a::::a y:::::y     y:::::y   
-//   H:::::::::::::::::H  o::::o     o::::o  n:::::nnnn:::::ne:::::::eeeee::::::e s:::::s  ssssss       t:::::t                 P::::PPPPPPPPP      aaaaaaa:::::a  y:::::y   y:::::y    
-//   H::::::HHHHH::::::H  o::::o     o::::o  n::::n    n::::ne:::::::::::::::::e    s::::::s            t:::::t                 P::::P            aa::::::::::::a   y:::::y y:::::y     
-//   H:::::H     H:::::H  o::::o     o::::o  n::::n    n::::ne::::::eeeeeeeeeee        s::::::s         t:::::t                 P::::P           a::::aaaa::::::a    y:::::y:::::y      
-//   H:::::H     H:::::H  o::::o     o::::o  n::::n    n::::ne:::::::e           ssssss   s:::::s       t:::::t    tttttt       P::::P          a::::a    a:::::a     y:::::::::y       
-// HH::::::H     H::::::HHo:::::ooooo:::::o  n::::n    n::::ne::::::::e          s:::::ssss::::::s      t::::::tttt:::::t     PP::::::PP        a::::a    a:::::a      y:::::::y        
-// H:::::::H     H:::::::Ho:::::::::::::::o  n::::n    n::::n e::::::::eeeeeeee  s::::::::::::::s       tt::::::::::::::t     P::::::::P        a:::::aaaa::::::a       y:::::y         
-// H:::::::H     H:::::::H oo:::::::::::oo   n::::n    n::::n  ee:::::::::::::e   s:::::::::::ss          tt:::::::::::tt     P::::::::P         a::::::::::aa:::a     y:::::y          
-// HHHHHHHHH     HHHHHHHHH   ooooooooooo     nnnnnn    nnnnnn    eeeeeeeeeeeeee    sssssssssss              ttttttttttt       PPPPPPPPPP          aaaaaaaaaa  aaaa    y:::::y           
-//                                                                                                                                                                   y:::::y            
-//                                                                                                                                                                  y:::::y             
-//                                                                                                                                                                 y:::::y              
-//                                                                                                                                                                y:::::y               
-//                                                                                                                                                               yyyyyyy                
-                                                                                                                                                                                     
-                                                                                                                                                                                     
-
+// #  888    888                                     888          8888888b.                    
+// #  888    888                                     888          888   Y88b                   
+// #  888    888                                     888          888    888                   
+// #  8888888888  .d88b.  88888b.   .d88b.  .d8888b  888888       888   d88P  8888b.  888  888 
+// #  888    888 d88""88b 888 "88b d8P  Y8b 88K      888          8888888P"      "88b 888  888 
+// #  888    888 888  888 888  888 88888888 "Y8888b. 888          888        .d888888 888  888 
+// #  888    888 Y88..88P 888  888 Y8b.          X88 Y88b.        888        888  888 Y88b 888 
+// #  888    888  "Y88P"  888  888  "Y8888   88888P'  "Y888       888        "Y888888  "Y88888 
+// #                                                                                       888 
+// #                                                                                  Y8b d88P 
+// #                                                                                   "Y88P"  
+// #                                                                                           
+// #                                                                                    
 
 
 pragma solidity 0.8.15;
@@ -172,7 +158,7 @@ contract HonestPayLock is Ownable {
 
         require(
             dealsMapping[_dealId].totalPayment >=
-                dealsMapping[_dealId].availablePayment,
+                dealsMapping[_dealId].availablePayment + dealsMapping[_dealId].paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
         dealsMapping[_dealId].creatorRating.push(_rating * 100);
@@ -438,6 +424,14 @@ contract HonestPayLock is Ownable {
             dealsMapping[_dealId].totalPayment);
     }
 
+    function getTotalPayment(uint256 _dealId)
+        external
+        view
+        returns (uint256)
+    {
+        return (dealsMapping[_dealId].totalPayment);
+    }
+
 
     function getRecruiterRating(uint256 _dealId)
         external
@@ -479,7 +473,7 @@ contract HonestPayLock is Ownable {
         uint256 sum;
         for (
             uint256 i = 0;
-            i <= dealsMapping[_dealId].recruiterRating.length;
+            i < dealsMapping[_dealId].recruiterRating.length;
             i++
         ) {
             sum += dealsMapping[_dealId].recruiterRating[i];
@@ -500,6 +494,10 @@ contract HonestPayLock is Ownable {
 
     function getDealStatus(uint256 _dealId) external view returns(uint) {
         return uint(dealsMapping[_dealId].status);
+    }
+
+    function getAdditionalPaymentLimit(uint256 _dealId) external view returns(uint) {
+        return additionalPaymentLimit[_dealId];
     }
 
     // admin functions

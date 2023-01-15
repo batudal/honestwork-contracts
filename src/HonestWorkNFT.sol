@@ -1,21 +1,20 @@
-//Contract based on [https://docs.openzeppelin.com/contracts/3.x/erc721](https://docs.openzeppelin.com/contracts/3.x/erc721)
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./Payments/HonestPayLock.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-//push deneme
-//cant bind more than one NFT
 
-contract HonestWorkNFT is Ownable, ERC721 {
+
+contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     //TBD
-    uint256 public MINT_FEE = 10 ether;
+    uint256 public MINT_FEE = 1 ether;
 
     uint256 public constant TOKEN_CAP = 10000;
     // TBD
@@ -32,6 +31,10 @@ contract HonestWorkNFT is Ownable, ERC721 {
     HonestPayLock public honestPayLock;
 
     constructor() ERC721("HonestWork", "HW") {}
+
+    function _baseURI() internal pure override returns (string memory) {
+        return "AABDAF"; // HW URI
+    }
 
     function publicMint(address recipient) external payable returns (uint256) {
         _tokenIds.increment();
@@ -63,7 +66,7 @@ contract HonestWorkNFT is Ownable, ERC721 {
         return newItemId;
     }
 
-
+    //solve price fluctuation
     function upgradeToken(uint256 _tokenId, uint256 _tier) external payable {
         require(
             ownerOf(_tokenId) == msg.sender,
@@ -115,5 +118,27 @@ contract HonestWorkNFT is Ownable, ERC721 {
 
     function setHonestPayLock(HonestPayLock _honestPayLock) external onlyOwner {
         honestPayLock = _honestPayLock;
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        require(balanceOf(to) == 0, "only one nft at a time");
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function getGrossRevenue(uint256 _tokenId) external view returns(uint256) 
+    {
+        return grossRevenue[_tokenId];
     }
 }
