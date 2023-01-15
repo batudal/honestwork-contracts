@@ -17,6 +17,7 @@ import "../utils/IPool.sol";
 
 
 // polygon usdc 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+//pancake router 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
 contract JobListing is Ownable {
     struct Payment {
@@ -29,15 +30,14 @@ contract JobListing is Ownable {
 
 
     IHWRegistry public registry;
-    IUniswapV2Router01 public router;
-    IERC20 public usdc = IERC20(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
-    IPool public pool = IPool(0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827);
+    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
+    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
     mapping(address => Payment[]) payments;
 
-    constructor(address _registry, address _router) {
+    constructor(address _registry) {
         registry = IHWRegistry(_registry);
-        router = IUniswapV2Router01(_router);
     }
 
     modifier checkWhitelist(address _token) {
@@ -74,7 +74,7 @@ contract JobListing is Ownable {
 
         address[] memory path = new address[](2);
         path[0] = router.WETH();
-        path[1] = address(usdc);
+        path[1] = address(busd);
         uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(_minTokensOut, path , address(this), block.timestamp + _allowedDelay);
         emit PaymentAddedETH(msg.value);
         return amounts;
