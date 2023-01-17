@@ -1,3 +1,12 @@
+/**
+ * @author -- Decoded Labs  .
+ * @title -- HonestPay   .
+ * @dev Contract is designed to smoothly serve the payment needs of creators and recruiters.
+ */
+
+
+
+
 // #  888    888                                     888          8888888b.                    
 // #  888    888                                     888          888   Y88b                   
 // #  888    888                                     888          888    888                   
@@ -13,48 +22,60 @@
 // #                                                                                    
 
 
+
+
+
 pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
 import "forge-std/console.sol";
 
 
 
-contract HonestPayLock is Ownable {
+
+
+contract HonestPayLock is Ownable, ReentrancyGuard {
+    //@notice enum to keep track of the state of the deal
     enum Status {
         OfferInitiated,
         JobCompleted,
         JobCancelled
     }
 
+
+    //@dev core of the contract, the deal struct reflects the terms of the agreement
+    //@params required notation is written next to the vars
     struct Deal {
-        address recruiter;
-        address creator;
-        address paymentToken;
-        uint256 totalPayment;
-        uint256 successFee;
-        uint256 paidAmount;
-        uint256 availablePayment;
-        Status status;
-        uint256[] recruiterRating;
-        uint256[] creatorRating;
+        address recruiter; //address of the recruiter
+        address creator; //address of the creator-freelancer
+        address paymentToken; //address of the payment token
+        uint256 totalPayment; //total payment amount denoted in the form of the payment token
+        uint256 successFee; //a variable to keep track of honestWork success fee
+        uint256 paidAmount; //a variable to keep track of the payments made
+        uint256 availablePayment; // a variable to keep track of the unlocked payment which can be claimed by the creator
+        Status status; // deal Status
+        uint256[] recruiterRating; // recruiter's rating array
+        uint256[] creatorRating; // creator's rating array
     }
-    IHWRegistry public registry;
-    HonestWorkNFT public hw721;
+    IHWRegistry public registry; //registry contract definition for retreiving the whitelisted payment mediums
+    HonestWorkNFT public hw721; //nft contract definition for recording grossRevenues to the nft.
 
     
-    uint256 public extraPaymentLimit;
-    uint256 public honestWorkSuccessFee;
-    address public honestWorkFeeCollector;
+    uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
+    uint256 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
+    address public honestWorkFeeCollector; //address for honestWork Fee Collector
     
 
-    mapping(uint256 => uint256) public additionalPaymentLimit;
-    mapping(uint256 => Deal) public dealsMapping;
-    // add dealId to OfferCreatedEvent ??
+    mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
+    mapping(uint256 => Deal) public dealsMapping; //mapping for keeping track of each offered deal. DealIds are unique.
+
+
     event OfferCreatedEvent(address indexed _recruiter, address indexed _creator, uint256 indexed _totalPayment, address _paymentToken); 
     event paymentUnlockedEvent(uint256 _dealId,address indexed _recruiter, uint256 indexed _unlockedAmount);
     event claimPaymentEvent(uint256 indexed _dealId,address indexed _creator, uint256 indexed _paymentReceived);
@@ -65,9 +86,11 @@ contract HonestPayLock is Ownable {
     event changeExtraPaymentLimitEvent(uint256 _newPaymentLimit);
     event claimSuccessFeeAllEvent(address _collector);
 
-
+    //Using a counter to count the dealIds, keeping them unique
     using Counters for Counters.Counter;
     Counters.Counter public dealIds;
+
+
 
     constructor(
         address _registry,
@@ -80,6 +103,17 @@ contract HonestPayLock is Ownable {
         honestWorkFeeCollector = _feeCollector;
     }
 
+    /**
+     * @notice function to create deals  .
+     * @dev function fills in the deal Struct with the terms of the deal. 
+        The agreed amount is deposited into the contract upon calling this function.
+        if the recruiter is calling the function, the signature of the creator must be given as a parameter.
+     * @param   _recruiter.
+     * @param   _creator.
+     * @param   _paymentToken function checks if the paymentToken is whitelisted.
+     * @param   _totalPayment.
+     * @param   _nonce.
+     */
     function createDeal(
         address _recruiter,
         address _creator,
@@ -139,6 +173,14 @@ contract HonestPayLock is Ownable {
         return _dealId;
     }
 
+    /**
+     * @notice  function to unlock payments which allow the creator to claim.
+     * @dev     function can be called by the recruiter of the _dealId parameter.
+     * @param   _dealId  .
+     * @param   _paymentAmount amount to be unlocked .
+     * @param   _rating upon intending to make a payment, recruiter rates the creator.
+     * @param   _recruiterNFT tokenId of recruiters nft which is required to record the gross rev.
+     */
     function unlockPayment(
         uint256 _dealId,
         uint256 _paymentAmount,
@@ -169,6 +211,14 @@ contract HonestPayLock is Ownable {
         emit paymentUnlockedEvent(_dealId, dealsMapping[_dealId].recruiter, _paymentAmount);
     }
 
+
+    /**
+     * @notice function cancels the deal.
+     * @dev    function is to be called by the recruiter of the _dealId specified
+        Upon calling, the recruiter shows intent to cancel the deal. Function sends the remaining
+        token amount to the recruiter. 
+     * @param   _dealId  .
+     */
     function withdrawPayment(uint256 _dealId) external {
         require(
             dealsMapping[_dealId].status == Status.OfferInitiated,
@@ -203,6 +253,15 @@ contract HonestPayLock is Ownable {
         emit withdrawPaymentEvent(_dealId, dealsMapping[_dealId].status);
     }
 
+    /**
+     * @notice  function to claim the Payment.
+     * @dev     function can be called by the creator of the _dealId.
+        if recruiter has intenteded to make any payment, creator claims it with this function
+     * @param   _dealId  .
+     * @param   _withdrawAmount  .
+     * @param   _rating  cretor rates the recruiter upon claiming.
+     * @param   _creatorNFT  tokenId of creatorNFT to record grossRev.
+     */
     function claimPayment(
         uint256 _dealId,
         uint256 _withdrawAmount,
@@ -258,6 +317,17 @@ contract HonestPayLock is Ownable {
         emit claimPaymentEvent(_dealId, dealsMapping[_dealId].creator, _withdrawAmount);
     }
 
+    
+
+    /**
+     * @notice  function to make additional payments which are not intended when creating the deal.
+     * @dev     function is to be called by the recruiter of the _dealId, function increases total payment
+        and available payment paramters. The intented amount is immediately unlocked for the creator to claim.
+     * @param   _dealId  .
+     * @param   _payment  .
+     * @param   _recruiterNFT  .
+     * @param   _rating  .
+     */
     function additionalPayment(
         uint256 _dealId,
         uint256 _payment,
@@ -333,7 +403,7 @@ contract HonestPayLock is Ownable {
                 abi.encodePacked(
                     "\x19Ethereum Signed Message:\n32",
                     _messageHash
-                )
+                ) 
             );
     }
 
