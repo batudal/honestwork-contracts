@@ -30,7 +30,7 @@ contract JobListing is Ownable {
 
 
     IHWRegistry public registry;
-    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
@@ -110,12 +110,13 @@ contract JobListing is Ownable {
         }
     }
 
-    function getMaticPrice(uint256 _amount) external view returns(uint) {
+    function getBnbPrice(uint256 _amount) external view returns(uint) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
     }
+
 
 
     event PaymentAdded(address indexed _token, uint256 _amount);

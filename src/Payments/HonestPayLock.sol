@@ -70,6 +70,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
     uint256 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
     address public honestWorkFeeCollector; //address for honestWork Fee Collector
+    uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
     
 
     mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
@@ -188,6 +189,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT
     ) external {
         require(
+            dealsMapping[_dealId].status == Status.OfferInitiated,
+            "deal is either completed or cancelled"
+        );
+        require(
             _rating >= 0 && _rating <= 10,
             "rating must be between 0 and 10"
         );
@@ -195,6 +200,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can unlock payments"
         );
+        require(
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter,0) == _recruiterNFT,
+            "only recruiter owned nftId can be passed as an argument"
+        );
+        
 
         dealsMapping[_dealId].availablePayment += _paymentAmount;
 
@@ -269,6 +279,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _creatorNFT
     ) external {
         require(
+            dealsMapping[_dealId].status == Status.OfferInitiated,
+            "deal is either completed or cancelled"
+        );
+
+        require(
             _rating >= 0 && _rating <= 10,
             "rating must be between 0 and 10"
         );
@@ -279,6 +294,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         require(
             dealsMapping[_dealId].availablePayment >= _withdrawAmount,
             "desired payment is not available yet"
+        );
+        require(
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].creator,0) == _creatorNFT,
+            "only creator owned nftId can be passed as an argument"
         );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         dealsMapping[_dealId].paidAmount += _withdrawAmount;
@@ -334,6 +353,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT,
         uint256 _rating
     ) external payable {
+
+        require(
+            dealsMapping[_dealId].status == Status.OfferInitiated,
+            "deal is either completed or cancelled"
+        );
         require(
             _rating >= 0 && _rating <= 10,
             "rating must be between 0 and 10"
@@ -349,6 +373,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         require(
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can add payments"
+        );
+
+        require(
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter,0) == _recruiterNFT,
+            "only recruiter owned nftId can be passed as an argument"
         );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         if (_paymentToken == address(0)) {
@@ -561,6 +590,15 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
     }
 
+    function getDealSuccessFee(uint256 _dealId)
+        external
+        view
+        returns (uint256)
+    {
+        
+        return dealsMapping[_dealId].successFee;
+    }
+
 
     function getDealStatus(uint256 _dealId) external view returns(uint) {
         return uint(dealsMapping[_dealId].status);
@@ -589,16 +627,43 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         external
         onlyOwner
     {
-        IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
-        paymentToken.transfer(_feeCollector, dealsMapping[_dealId].successFee);
-        emit claimSuccessFeeEvent(_dealId,dealsMapping[_dealId].successFee );
+        uint256 successFee = dealsMapping[_dealId].successFee;
+
+        if(dealsMapping[_dealId].paymentToken != address(0)) {
+            IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
+            paymentToken.transfer(_feeCollector, successFee );
+        }
+        else {
+            (bool payment, ) = payable(_feeCollector).call{
+                value: successFee
+            }("");
+            require(payment, "payment failed");
+            
+            
+            
+    }
+            totalCollectedSuccessFee += successFee;
+            dealsMapping[_dealId].successFee = 0;
+            emit claimSuccessFeeEvent(_dealId,dealsMapping[_dealId].successFee );
     }
 
     function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
+        
         for (uint256 i = 1; i <= dealIds.current(); i++) {
             uint256 successFee = dealsMapping[i].successFee;
-            IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
-            paymentToken.transfer(_feeCollector, successFee);
+            if(successFee > 0) {
+            if(dealsMapping[i].paymentToken == address(0)) {
+                (bool payment, ) = payable(_feeCollector).call{
+                value: successFee
+            }("");
+            require(payment, "payment failed");
+            }
+            else {
+                IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
+                paymentToken.transfer(_feeCollector, successFee);
+            }
+            dealsMapping[i].successFee = 0;
+        }
         }
         emit claimSuccessFeeAllEvent(_feeCollector);
     }
