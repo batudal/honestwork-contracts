@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../src/Payments/HonestPayLock.sol";
 import "../src//HonestWorkNFT.sol";
 import "../src//Registry/HWRegistry.sol";
+import "../src//mock/MockToken.sol";
 
 contract HonestPayLockTest is Test {
     enum Status {
@@ -15,6 +16,9 @@ contract HonestPayLockTest is Test {
 
     Status public status;
 
+
+    MockToken public token;
+    MockToken public token2;
     HonestPayLock public hplock;
     HonestWorkNFT public hw721;
     HWRegistry public registry;
@@ -32,6 +36,10 @@ contract HonestPayLockTest is Test {
             address(hw721),
             0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496
         );
+
+        token = new MockToken("MCK", "MOCK");
+        token2 = new MockToken("MCK", "MOCK");
+
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
         creator1 = vm.addr(3);
@@ -46,8 +54,14 @@ contract HonestPayLockTest is Test {
         hw721.publicMint{value: 10 ether}(address(creator1));
         hw721.publicMint{value: 10 ether}(address(creator2));
 
+        token.transfer(address(recruiter1), 20 ether);
+        token2.transfer(address(recruiter2), 30 ether);
+
+
         hw721.setHonestPayLock((hplock));
         registry.addWhitelisted(address(0), 1000 ether);
+        registry.addWhitelisted(address(token), 1000 ether);
+        registry.addWhitelisted(address(token2), 1000 ether);
 
         //console.log(x);
     }
@@ -161,7 +175,7 @@ contract HonestPayLockTest is Test {
         vm.warp(500);
         assertEq(hplock.getAvailablePayment(dealId), 5 ether);
         assertEq(hplock.getAvgCreatorRating(dealId), 800);
-        assertEq(hw721.getGrossRevenue(nftId), 5 ether);
+        assertEq(hw721.getGrossRevenue(nftId), hplock.getBnbPrice(5 ether));
 
         vm.prank(creator1);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -227,16 +241,16 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 7 ether, 10, nftId2);
 
-        assertEq(hw721.getGrossRevenue(nftId), 7 ether);
-        assertEq(hw721.getGrossRevenue(nftId2), 7 ether);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId), hplock.getBnbPrice(7 ether), 1000000);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId2), hplock.getBnbPrice(7 ether),100000);
 
         vm.prank(recruiter1);
         hplock.unlockPayment(dealId, 3 ether, 7, nftId);
         vm.prank(creator1);
         hplock.claimPayment(dealId, 3 ether, 10, nftId2);
 
-        assertEq(hw721.getGrossRevenue(nftId), 10 ether);
-        assertEq(hw721.getGrossRevenue(nftId2), 10 ether);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId), hplock.getBnbPrice(10 ether), 1000000);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId2), hplock.getBnbPrice(10 ether),100000);
         assertEq(hplock.getDealStatus(dealId), 1);
 
         dealId = hplock.createDeal{value: 20 ether}(
@@ -253,8 +267,8 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
 
-        assertEq(hw721.getGrossRevenue(nftId), 21 ether);
-        assertEq(hw721.getGrossRevenue(nftId2), 15 ether);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId), hplock.getBnbPrice(21 ether), 1000000);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId2), hplock.getBnbPrice(15 ether),100000);
     }
 
     function testSuccessFee() public {
@@ -399,5 +413,34 @@ contract HonestPayLockTest is Test {
         vm.prank(recruiter1);
         vm.expectRevert();
         hplock.additionalPayment{value: 2 ether}(dealId, 2 ether, nftId, 8);
+    }
+
+    function testNativePrice() public {
+        uint256 price = hplock.getBnbPrice(1 ether);
+        //console.log("price:" , price);
+    }
+
+    function testDealWithToken() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 5 ether,300000000000000000);
     }
 }

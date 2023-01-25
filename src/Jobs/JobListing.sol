@@ -101,12 +101,14 @@ contract JobListing is Ownable {
     function withdrawAllTokens() external onlyOwner {
         uint256 counter = registry.counter();
         for (uint256 i = 0; i < counter; i++) {
+            if(registry.allWhitelisted()[i].token != address(0)) {
             IERC20(registry.allWhitelisted()[i].token).transfer(
                 msg.sender,
                 IERC20(registry.allWhitelisted()[i].token).balanceOf(
                     address(this)
                 )
             );
+        }
         }
     }
 
@@ -118,6 +120,13 @@ contract JobListing is Ownable {
     }
 
 
+    function updateRegistry(address _registry) external onlyOwner {
+        registry = IHWRegistry(_registry);
+    }
+    
+    function getBusdBalance() external view returns(uint) {
+        return busd.balanceOf(address(this));
+    }
 
     event PaymentAdded(address indexed _token, uint256 _amount);
     event PaymentAddedETH(uint256 _amount);
