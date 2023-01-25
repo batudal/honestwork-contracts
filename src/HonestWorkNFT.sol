@@ -8,18 +8,12 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./Payments/HonestPayLock.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-
-
 contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
-    //TBD
     uint256 public MINT_FEE = 1 ether;
-
     uint256 public constant TOKEN_CAP = 10000;
-    // TBD
     uint256 public tier2Fee = 100 ether;
-    //TBD
     uint256 public tier3Fee = 1000 ether;
     bytes32 public whitelistRoot;
 
@@ -28,13 +22,97 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     mapping(uint256 => uint256) public tier;
     mapping(uint256 => uint256) public grossRevenue;
 
+    event RevenueIncreased(uint256 id, uint256 revenue);
+    event Upgraded(uint256 id, uint256 tier);
+    event Mint(uint256 id, address user);
+
     HonestPayLock public honestPayLock;
 
     constructor() ERC721("HonestWork", "HW") {}
 
+    modifier onlyHonestPay() {
+        require(
+            msg.sender == address(honestPayLock),
+            "only HonestWork contract can record gross revenue"
+        );
+        _;
+    }
+
+    // restricted fxns
+
+    function setWhitelistRoot(bytes32 _root) external onlyOwner {
+        whitelistRoot = _root;
+    }
+
+    function changeTierTwoFee(uint256 _newFee) external onlyOwner {
+        tier2Fee = _newFee;
+    }
+
+    function changeTierThreeFee(uint256 _newFee) external onlyOwner {
+        tier3Fee = _newFee;
+    }
+
+    function recordGrossRevenue(
+        uint256 _nftId,
+        uint256 _revenue
+    ) external onlyHonestPay {
+        grossRevenue[_nftId] += _revenue;
+        emit RevenueIncreased(_nftId, _revenue);
+    }
+
+    function setHonestPayLock(HonestPayLock _honestPayLock) external onlyOwner {
+        honestPayLock = _honestPayLock;
+    }
+
+    // view fxns
+
+    function getGrossRevenue(uint256 _tokenId) external view returns (uint256) {
+        return grossRevenue[_tokenId];
+    }
+
+    function getAllGrossRevenues() external view returns (uint256[] memory) {
+        uint256[] memory _grossRevenues = new uint256[](totalSupply());
+        for (uint256 i = 0; i < totalSupply(); i++) {
+            _grossRevenues[i] = grossRevenue[i];
+        }
+        return _grossRevenues;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+    // internal fxns
+
     function _baseURI() internal pure override returns (string memory) {
         return "AABDAF"; // HW URI
     }
+
+    function _whitelistLeaf(address _address) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_address));
+    }
+
+    function _verify(
+        bytes32 leaf,
+        bytes32 _root,
+        bytes32[] memory _proof
+    ) internal pure returns (bool) {
+        return MerkleProof.verify(_proof, _root, leaf);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override(ERC721, ERC721Enumerable) {
+        require(balanceOf(to) == 0, "only one nft at a time");
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    // mutative fxns
 
     function publicMint(address recipient) external payable returns (uint256) {
         _tokenIds.increment();
@@ -43,14 +121,14 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
         _mint(recipient, newItemId);
         tier[newItemId] = 1;
-
+        emit Mint(newItemId, recipient);
         return newItemId;
     }
 
-    function whitelistMint(address recipient, bytes32[] calldata _proof)
-        external
-        returns (uint256)
-    {
+    function whitelistMint(
+        address recipient,
+        bytes32[] calldata _proof
+    ) external returns (uint256) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
@@ -80,65 +158,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
             revert("only 3 tiers possible");
         }
         tier[_tokenId] = _tier;
-    }
-
-    function _whitelistLeaf(address _address) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_address));
-    }
-
-    function _verify(
-        bytes32 leaf,
-        bytes32 _root,
-        bytes32[] memory _proof
-    ) internal pure returns (bool) {
-        return MerkleProof.verify(_proof, _root, leaf);
-    }
-
-    function setWhitelistRoot(bytes32 _root) external onlyOwner {
-        whitelistRoot = _root;
-    }
-
-    function changeTierTwoFee(uint256 _newFee) external onlyOwner {
-        tier2Fee = _newFee;
-    }
-
-    function changeTierThreeFee(uint256 _newFee) external onlyOwner {
-        tier3Fee = _newFee;
-    }
-
-    function recordGrossRevenue(uint256 _nftId, uint256  _revenue) external onlyHonestPay {
-        grossRevenue[_nftId] += _revenue;
-    }
-
-    modifier onlyHonestPay{
-        require(msg.sender == address(honestPayLock), "only HonestWork contract can record gross revenue");
-        _;
-
-    }
-
-    function setHonestPayLock(HonestPayLock _honestPayLock) external onlyOwner {
-        honestPayLock = _honestPayLock;
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
-        require(balanceOf(to) == 0, "only one nft at a time");
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-
-    function getGrossRevenue(uint256 _tokenId) external view returns(uint256) 
-    {
-        return grossRevenue[_tokenId];
+        emit Upgraded(_tokenId, _tier);
     }
 }
