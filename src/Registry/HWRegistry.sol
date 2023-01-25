@@ -32,8 +32,8 @@ contract HWRegistry is Ownable {
         return true;
     }
 
-    function removeWhitelisted(uint256 _id) external onlyOwner returns (bool) {
-        address _address = whitelisted[_id].token;
+    function removeWhitelisted(address _address) external onlyOwner returns (bool) {
+        uint256 _id = getWhitelistedID(_address);
         whitelisted[_id] = Whitelist({token: address(0), maxAllowed: 0});
         emit WhitelistedRemoved(_address);
         return true;

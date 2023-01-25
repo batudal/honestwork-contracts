@@ -18,8 +18,7 @@
 // #                                                                                       888 
 // #                                                                                  Y8b d88P 
 // #                                                                                   "Y88P"  
-// #                                                                                           
-// #                                                                                    
+                                                                                 
 
 
 
@@ -35,6 +34,12 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
 import "forge-std/console.sol";
+
+import "../Registry/IHWRegistry.sol";
+import "../utils/IUniswapV2Router01.sol";
+import "../utils/IPool.sol";
+
+
 
 
 
@@ -65,6 +70,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     }
     IHWRegistry public registry; //registry contract definition for retreiving the whitelisted payment mediums
     HonestWorkNFT public hw721; //nft contract definition for recording grossRevenues to the nft.
+
+
+    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
+    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
+    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
     
     uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
@@ -207,6 +217,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         
 
         dealsMapping[_dealId].availablePayment += _paymentAmount;
+        address _paymentToken = dealsMapping[_dealId].paymentToken;
 
         require(
             dealsMapping[_dealId].totalPayment >=
@@ -216,7 +227,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         dealsMapping[_dealId].creatorRating.push(_rating * 100);
 
         if (hw721.balanceOf(msg.sender) == 1) {
-            hw721.recordGrossRevenue(_recruiterNFT, _paymentAmount);
+            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_paymentAmount) : _paymentAmount);
+            hw721.recordGrossRevenue(_recruiterNFT, grossRev);
         }
         emit paymentUnlockedEvent(_dealId, dealsMapping[_dealId].recruiter, _paymentAmount);
     }
@@ -313,18 +325,15 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             require(payment, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.approve(
-                dealsMapping[_dealId].creator,
-                (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
-            );
-            paymentToken.transferFrom(
-                address(this),
+
+            paymentToken.transfer(
                 msg.sender,
                 ((_withdrawAmount * (100 - honestWorkSuccessFee)) / 100)
             );
         }
         if (hw721.balanceOf(msg.sender) == 1) {
-            hw721.recordGrossRevenue(_creatorNFT, _withdrawAmount);
+            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_withdrawAmount) : _withdrawAmount);
+            hw721.recordGrossRevenue(_creatorNFT, grossRev);
         }
         if (
             dealsMapping[_dealId].paidAmount >=
@@ -395,7 +404,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
 
         if (hw721.balanceOf(msg.sender) == 1) {
-            hw721.recordGrossRevenue(_recruiterNFT, _payment);
+            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_payment) : _payment);
+            hw721.recordGrossRevenue(_recruiterNFT, grossRev);
         }
 
         additionalPaymentLimit[_dealId] += 1;
@@ -667,9 +677,18 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
         emit claimSuccessFeeAllEvent(_feeCollector);
     }
-
+    
     function changeExtraPaymentLimit(uint256 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit changeExtraPaymentLimitEvent(_limit);
     }
+
+
+    function getBnbPrice(uint256 _amount) public view returns(uint) {
+        uint256 reserve1;
+        uint256 reserve2;
+        (reserve1, reserve2, ) = pool.getReserves();
+        return router.quote(_amount, reserve1, reserve2);
+    }
+
 }
