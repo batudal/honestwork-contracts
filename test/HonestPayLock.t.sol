@@ -33,8 +33,7 @@ contract HonestPayLockTest is Test {
         hw721 = new HonestWorkNFT();
         hplock = new HonestPayLock(
             address(registry),
-            address(hw721),
-            0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496
+            address(hw721)
         );
 
         token = new MockToken("MCK", "MOCK");

@@ -79,7 +79,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     
     uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
     uint256 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
-    address public honestWorkFeeCollector; //address for honestWork Fee Collector
     uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
     
 
@@ -105,13 +104,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
 
     constructor(
         address _registry,
-        address _HW721,
-        address _feeCollector
+        address _HW721
     ) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
         hw721 = HonestWorkNFT(_HW721);
-        honestWorkFeeCollector = _feeCollector;
     }
 
     /**
@@ -623,10 +620,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function changeSuccessFee(uint256 _fee) external onlyOwner {
         honestWorkSuccessFee = _fee;
         emit successFeeChangedEvent(_fee);
-    }
-
-    function changeFeeCollectorAddress(address _collector) external onlyOwner {
-        honestWorkFeeCollector = _collector;
     }
 
     function changeRegistry(IHWRegistry _registry) external onlyOwner {
