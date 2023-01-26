@@ -493,26 +493,58 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
 
     //Getters
 
+    /**
+     * @notice  function to the requested deal struct.
+     * @param   _dealId  .
+     * @return  Deal  .
+     */
     function getDeal(uint256 _dealId) external view returns (Deal memory) {
         return dealsMapping[_dealId];
     }
 
+
+    /**
+     * @notice  function to return the creator address of a specified deal.
+     * @param   _dealId  .
+     * @return  address  .
+     */
     function getCreator(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].creator;
     }
 
+    /**
+     * @notice  function to return the recruiter address of a specfied deal.
+     * @param   _dealId  .
+     * @return  address  .
+     */
     function getRecruiter(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].recruiter;
     }
 
+    /**
+     * @notice  function to return the payment token of a specified deal.
+     * @dev     returns address(0) if payment method is native currency of the network.
+     * @param   _dealId  .
+     * @return  address  .
+     */
     function getPaymentToken(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].paymentToken;
     }
 
+    /**
+     * @notice  function to return the paidAmount by the recruiter.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getPaidAmount(uint256 _dealId) external view returns (uint256) {
         return dealsMapping[_dealId].paidAmount;
     }
 
+    /**
+     * @notice  function to return the available amount which is claimable by the creator.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getAvailablePayment(uint256 _dealId)
         external
         view
@@ -521,6 +553,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return dealsMapping[_dealId].availablePayment;
     }
 
+    /**
+     * @notice  function returns the completion rate of a deal accounted by the paidAmount/TotalPayment.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getJobCompletionRate(uint256 _dealId)
         external
         view
@@ -530,6 +567,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             dealsMapping[_dealId].totalPayment);
     }
 
+
+    /**
+     * @notice  function to return the total payment of a specified deal.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getTotalPayment(uint256 _dealId)
         external
         view
@@ -538,7 +581,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (dealsMapping[_dealId].totalPayment);
     }
 
-
+    /**
+     * @notice  function to return the recruiter's rating array.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getRecruiterRating(uint256 _dealId)
         external
         view
@@ -547,6 +594,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (dealsMapping[_dealId].recruiterRating);
     }
 
+    /**
+     * @notice  function to return the creator's rating array.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getCreatorRating(uint256 _dealId)
         external
         view
@@ -555,6 +607,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (dealsMapping[_dealId].creatorRating);
     }
 
+    /**
+     * @notice  function to return the creator's average rating.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getAvgCreatorRating(uint256 _dealId)
         external
         view
@@ -571,6 +628,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (sum / dealsMapping[_dealId].creatorRating.length);
     }
 
+
+    /**
+     * @notice  function to return the recruiter's average rating.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getAvgRecruiterRating(uint256 _dealId)
         external
         view
@@ -587,16 +650,28 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (sum / dealsMapping[_dealId].recruiterRating.length);
     }
 
+
+    /**
+     * @notice  function to return the totalSuccessFee claimable or claimed by HW.
+     * @return  uint256.
+     */
     function getTotalSuccessFee()
         external
         view
-        returns (uint256 totalSuccessFee)
+        returns (uint256)
     {
+        uint256 totalSuccessFee;
         for (uint256 i = 1; i <= dealIds.current(); i++) {
             totalSuccessFee += dealsMapping[i].successFee;
         }
+        return totalSuccessFee;
     }
 
+    /**
+     * @notice  function to return the success fee of a specified deal.
+     * @param   _dealId  .
+     * @return  uint256  .
+     */
     function getDealSuccessFee(uint256 _dealId)
         external
         view
@@ -606,26 +681,50 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return dealsMapping[_dealId].successFee;
     }
 
-
+    /**
+     * @notice  function to return the status of a specified deal.
+     * @param   _dealId  .
+     * @return  uint  .
+     */
     function getDealStatus(uint256 _dealId) external view returns(uint) {
         return uint(dealsMapping[_dealId].status);
     }
 
+    /**
+     * @notice  function to return the additional payment limit of a specified deal.
+     * @param   _dealId  .
+     * @return  uint  .
+     */
     function getAdditionalPaymentLimit(uint256 _dealId) external view returns(uint) {
         return additionalPaymentLimit[_dealId];
     }
 
     // admin functions
 
+    /**
+     * @notice  function to change the successFee ratio.
+     * @dev     onlyOwner restriction, value is expressed as a percentage.
+     * @param   _fee  .
+     */
     function changeSuccessFee(uint256 _fee) external onlyOwner {
         honestWorkSuccessFee = _fee;
         emit successFeeChangedEvent(_fee);
     }
 
+    /**
+     * @notice  function to change the registry address.
+     * @dev     onlyOwner restriction.
+     * @param   _registry  .
+     */
     function changeRegistry(IHWRegistry _registry) external onlyOwner {
         registry = _registry;
     }
 
+    /**
+     * @notice  function to claim the successFee earned by HW for a specified deal.
+     * @dev     onlyOwner restriction.
+     * @param   _dealId _feeCollector.
+     */    
     function claimSuccessFee(uint256 _dealId, address _feeCollector)
         external
         onlyOwner
@@ -650,6 +749,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             emit claimSuccessFeeEvent(_dealId,dealsMapping[_dealId].successFee );
     }
 
+    /**
+     * @notice  function to claim the successFee earned by HW for all deals.
+     * @dev     onlyOwner restriction.
+     * @param   _feeCollector  .
+     */
     function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
         
         for (uint256 i = 1; i <= dealIds.current(); i++) {
@@ -671,12 +775,20 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         emit claimSuccessFeeAllEvent(_feeCollector);
     }
     
+    /**
+     * @notice  function to change the extra payment limit.
+     * @dev     onlyOwner restriction.
+     * @param   _limit  .
+     */
     function changeExtraPaymentLimit(uint256 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit changeExtraPaymentLimitEvent(_limit);
     }
 
-
+    /**
+     * @notice  function to get BnbPrice denominated in BUSD from pancakeswap.
+     * @param   _amount  .
+     */
     function getBnbPrice(uint256 _amount) public view returns(uint) {
         uint256 reserve1;
         uint256 reserve2;
@@ -685,3 +797,4 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     }
 
 }
+
