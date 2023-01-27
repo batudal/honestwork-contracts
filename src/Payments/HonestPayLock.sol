@@ -269,12 +269,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             require(payment, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.approve(
-                dealsMapping[_dealId].recruiter,
-                amountToBeWithdrawn
-            );
-            paymentToken.transferFrom(
-                address(this),
+            paymentToken.transfer(
                 msg.sender,
                 (amountToBeWithdrawn)
             );

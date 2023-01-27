@@ -442,4 +442,160 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         assertApproxEqAbs(token.balanceOf(address(creator1)), 5 ether,300000000000000000);
     }
+
+    function testAdditionalPaymentWithToken() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 5 ether,300000000000000000);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        hplock.additionalPayment(dealId, 5 ether, nftId, 8);
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 10 ether,500000000000000000);
+    }
+
+    function testCompleteDealWithToken() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        hplock.additionalPayment(dealId, 2 ether, nftId, 8);
+
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 12 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 12 ether,1000000000000000000);
+        assertEq(hplock.getDealStatus(dealId), 1);
+    }
+
+    function testWithdrawPaymentWithToken() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 balanceBefore = token.balanceOf(address(recruiter1));
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.withdrawPayment(dealId);
+        uint256 balanceAfter = token.balanceOf(address(recruiter1));
+        assertEq(balanceAfter, balanceBefore);
+
+    }
+
+    function testWithdrawPaymentWithToken2() public {
+        vm.roll(100);
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 balanceBefore = token.balanceOf(address(recruiter1));
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 3 ether, 5, nftId);
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 1 ether, 10, nftId2);
+
+
+        vm.prank(recruiter1);
+        hplock.withdrawPayment(dealId);
+        uint256 balanceAfter = token.balanceOf(address(recruiter1));
+        assertEq(balanceAfter + 1 ether, balanceBefore);
+
+    }
+
+    function testGrossRevenueWithToken() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            1
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.warp(300);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 5 ether,300000000000000000);
+        vm.prank(recruiter1);
+        token.approve(address(hplock), 10 ether);
+        vm.prank(recruiter1);
+        hplock.additionalPayment(dealId, 5 ether, nftId, 8);
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 10, nftId2);
+        vm.prank(creator1);
+        assertApproxEqAbs(token.balanceOf(address(creator1)), 10 ether,500000000000000000);
+        vm.prank(recruiter1);
+        assertApproxEqAbs(hw721.getGrossRevenue(nftId2),hplock.getBnbPrice(10 ether),1000000000000000000);
+    }
+
+
 }
+
+
+//grossRevenue
+//successFee
+

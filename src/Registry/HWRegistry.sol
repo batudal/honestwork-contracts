@@ -95,7 +95,8 @@ contract HWRegistry is Ownable {
     }
 
     
-    //write me a function that returns string "Eda Mutlu"
-    
+
+
+
 
 }
