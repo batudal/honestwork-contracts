@@ -3,26 +3,17 @@
  * @title -- HonestPay   .
  * @dev Contract is designed to smoothly serve the payment needs of creators and recruiters.
  */
-
-
-
-
-// #  888    888                                     888          8888888b.                    
-// #  888    888                                     888          888   Y88b                   
-// #  888    888                                     888          888    888                   
-// #  8888888888  .d88b.  88888b.   .d88b.  .d8888b  888888       888   d88P  8888b.  888  888 
-// #  888    888 d88""88b 888 "88b d8P  Y8b 88K      888          8888888P"      "88b 888  888 
-// #  888    888 888  888 888  888 88888888 "Y8888b. 888          888        .d888888 888  888 
-// #  888    888 Y88..88P 888  888 Y8b.          X88 Y88b.        888        888  888 Y88b 888 
-// #  888    888  "Y88P"  888  888  "Y8888   88888P'  "Y888       888        "Y888888  "Y88888 
-// #                                                                                       888 
-// #                                                                                  Y8b d88P 
-// #                                                                                   "Y88P"  
-                                                                                 
-
-
-
-
+// #  888    888                                     888          8888888b.
+// #  888    888                                     888          888   Y88b
+// #  888    888                                     888          888    888
+// #  8888888888  .d88b.  88888b.   .d88b.  .d8888b  888888       888   d88P  8888b.  888  888
+// #  888    888 d88""88b 888 "88b d8P  Y8b 88K      888          8888888P"      "88b 888  888
+// #  888    888 888  888 888  888 88888888 "Y8888b. 888          888        .d888888 888  888
+// #  888    888 Y88..88P 888  888 Y8b.          X88 Y88b.        888        888  888 Y88b 888
+// #  888    888  "Y88P"  888  888  "Y8888   88888P'  "Y888       888        "Y888888  "Y88888
+// #                                                                                       888
+// #                                                                                  Y8b d88P
+// #                                                                                   "Y88P"
 
 pragma solidity 0.8.15;
 
@@ -39,12 +30,6 @@ import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 
-
-
-
-
-
-
 contract HonestPayLock is Ownable, ReentrancyGuard {
     //@notice enum to keep track of the state of the deal
     enum Status {
@@ -52,7 +37,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         JobCompleted,
         JobCancelled
     }
-
 
     //@dev core of the contract, the deal struct reflects the terms of the agreement
     //@params required notation is written next to the vars
@@ -71,25 +55,39 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     IHWRegistry public registry; //registry contract definition for retreiving the whitelisted payment mediums
     HonestWorkNFT public hw721; //nft contract definition for recording grossRevenues to the nft.
 
-
-    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
+    IUniswapV2Router01 public router =
+        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
-    
     uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
     uint256 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
     uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
-    
 
     mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
     mapping(uint256 => Deal) public dealsMapping; //mapping for keeping track of each offered deal. DealIds are unique.
 
-
-    event OfferCreatedEvent(address indexed _recruiter, address indexed _creator, uint256 indexed _totalPayment, address _paymentToken); 
-    event paymentUnlockedEvent(uint256 _dealId,address indexed _recruiter, uint256 indexed _unlockedAmount);
-    event claimPaymentEvent(uint256 indexed _dealId,address indexed _creator, uint256 indexed _paymentReceived);
-    event additionalPaymentEvent(uint256 indexed _dealId, address indexed _recruiter, uint256 indexed _payment);
+    event OfferCreatedEvent(
+        address indexed _recruiter,
+        address indexed _creator,
+        uint256 indexed _totalPayment,
+        address _paymentToken
+    );
+    event paymentUnlockedEvent(
+        uint256 _dealId,
+        address indexed _recruiter,
+        uint256 indexed _unlockedAmount
+    );
+    event claimPaymentEvent(
+        uint256 indexed _dealId,
+        address indexed _creator,
+        uint256 indexed _paymentReceived
+    );
+    event additionalPaymentEvent(
+        uint256 indexed _dealId,
+        address indexed _recruiter,
+        uint256 indexed _payment
+    );
     event withdrawPaymentEvent(uint256 indexed _dealId, Status status);
     event successFeeChangedEvent(uint256 _newSuccessFee);
     event claimSuccessFeeEvent(uint256 indexed _dealId, uint256 _amount);
@@ -100,12 +98,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter public dealIds;
 
-
-
-    constructor(
-        address _registry,
-        address _HW721
-    ) Ownable() {
+    constructor(address _registry, address _HW721) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
         hw721 = HonestWorkNFT(_HW721);
@@ -128,8 +121,14 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         address _paymentToken,
         uint256 _totalPayment,
         uint256 _nonce
-        //bytes memory signature
-    ) external payable returns (uint256) {
+    )
+        external
+        payable
+        returns (
+            //bytes memory signature
+            uint256
+        )
+    {
         // if (msg.sender == _recruiter) {
         //     require(
         //         verify(
@@ -177,7 +176,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
                 (_totalPayment)
             );
         }
-        emit OfferCreatedEvent(_recruiter, _creator, _totalPayment, _paymentToken);
+        emit OfferCreatedEvent(
+            _recruiter,
+            _creator,
+            _totalPayment,
+            _paymentToken
+        );
         return _dealId;
     }
 
@@ -208,28 +212,36 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "only recruiter can unlock payments"
         );
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter,0) == _recruiterNFT,
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter, 0) ==
+                _recruiterNFT,
             "only recruiter owned nftId can be passed as an argument"
         );
-        
 
         dealsMapping[_dealId].availablePayment += _paymentAmount;
         address _paymentToken = dealsMapping[_dealId].paymentToken;
 
         require(
             dealsMapping[_dealId].totalPayment >=
-                dealsMapping[_dealId].availablePayment + dealsMapping[_dealId].paidAmount,
+                dealsMapping[_dealId].availablePayment +
+                    dealsMapping[_dealId].paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
         dealsMapping[_dealId].creatorRating.push(_rating * 100);
 
         if (hw721.balanceOf(msg.sender) == 1) {
-            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_paymentAmount) : _paymentAmount);
+            uint256 grossRev = (
+                _paymentToken == address(0)
+                    ? getBnbPrice(_paymentAmount)
+                    : _paymentAmount
+            );
             hw721.recordGrossRevenue(_recruiterNFT, grossRev);
         }
-        emit paymentUnlockedEvent(_dealId, dealsMapping[_dealId].recruiter, _paymentAmount);
+        emit paymentUnlockedEvent(
+            _dealId,
+            dealsMapping[_dealId].recruiter,
+            _paymentAmount
+        );
     }
-
 
     /**
      * @notice function cancels the deal.
@@ -246,7 +258,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         require(
             dealsMapping[_dealId].recruiter == msg.sender,
             "only recruiter can withdraw payments"
-        );  
+        );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
         uint256 amountToBeWithdrawn = dealsMapping[_dealId].totalPayment -
             dealsMapping[_dealId].paidAmount;
@@ -305,7 +317,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "desired payment is not available yet"
         );
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].creator,0) == _creatorNFT,
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].creator, 0) ==
+                _creatorNFT,
             "only creator owned nftId can be passed as an argument"
         );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
@@ -329,7 +342,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             );
         }
         if (hw721.balanceOf(msg.sender) == 1) {
-            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_withdrawAmount) : _withdrawAmount);
+            uint256 grossRev = (
+                _paymentToken == address(0)
+                    ? getBnbPrice(_withdrawAmount)
+                    : _withdrawAmount
+            );
             hw721.recordGrossRevenue(_creatorNFT, grossRev);
         }
         if (
@@ -339,10 +356,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             dealsMapping[_dealId].status = Status.JobCompleted;
         }
 
-        emit claimPaymentEvent(_dealId, dealsMapping[_dealId].creator, _withdrawAmount);
+        emit claimPaymentEvent(
+            _dealId,
+            dealsMapping[_dealId].creator,
+            _withdrawAmount
+        );
     }
-
-    
 
     /**
      * @notice  function to make additional payments which are not intended when creating the deal.
@@ -359,7 +378,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT,
         uint256 _rating
     ) external payable {
-
         require(
             dealsMapping[_dealId].status == Status.OfferInitiated,
             "deal is either completed or cancelled"
@@ -382,7 +400,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         );
 
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter,0) == _recruiterNFT,
+            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter, 0) ==
+                _recruiterNFT,
             "only recruiter owned nftId can be passed as an argument"
         );
         address _paymentToken = dealsMapping[_dealId].paymentToken;
@@ -401,13 +420,19 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
 
         if (hw721.balanceOf(msg.sender) == 1) {
-            uint256 grossRev = (_paymentToken == address(0) ? getBnbPrice(_payment) : _payment);
+            uint256 grossRev = (
+                _paymentToken == address(0) ? getBnbPrice(_payment) : _payment
+            );
             hw721.recordGrossRevenue(_recruiterNFT, grossRev);
         }
 
         additionalPaymentLimit[_dealId] += 1;
         dealsMapping[_dealId].creatorRating.push(_rating * 100);
-        emit additionalPaymentEvent(_dealId, dealsMapping[_dealId].recruiter, _payment);
+        emit additionalPaymentEvent(
+            _dealId,
+            dealsMapping[_dealId].recruiter,
+            _payment
+        );
     }
 
     function getOfferHash(
@@ -439,7 +464,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
                 abi.encodePacked(
                     "\x19Ethereum Signed Message:\n32",
                     _messageHash
-                ) 
+                )
             );
     }
 
@@ -501,7 +526,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function getDeal(uint256 _dealId) external view returns (Deal memory) {
         return dealsMapping[_dealId];
     }
-
 
     /**
      * @notice  function to return the creator address of a specified deal.
@@ -567,17 +591,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             dealsMapping[_dealId].totalPayment);
     }
 
-
     /**
      * @notice  function to return the total payment of a specified deal.
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getTotalPayment(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getTotalPayment(uint256 _dealId) external view returns (uint256) {
         return (dealsMapping[_dealId].totalPayment);
     }
 
@@ -628,7 +647,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return (sum / dealsMapping[_dealId].creatorRating.length);
     }
 
-
     /**
      * @notice  function to return the recruiter's average rating.
      * @param   _dealId  .
@@ -649,17 +667,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
         return (sum / dealsMapping[_dealId].recruiterRating.length);
     }
-
-
+    
     /**
      * @notice  function to return the totalSuccessFee claimable or claimed by HW.
      * @return  uint256.
      */
-    function getTotalSuccessFee()
-        external
-        view
-        returns (uint256)
-    {
+    function getTotalSuccessFee() external view returns (uint256) {
         uint256 totalSuccessFee;
         for (uint256 i = 1; i <= dealIds.current(); i++) {
             totalSuccessFee += dealsMapping[i].successFee;
@@ -677,7 +690,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         view
         returns (uint256)
     {
-        
         return dealsMapping[_dealId].successFee;
     }
 
@@ -686,8 +698,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint  .
      */
-    function getDealStatus(uint256 _dealId) external view returns(uint) {
-        return uint(dealsMapping[_dealId].status);
+    function getDealStatus(uint256 _dealId) external view returns (uint256) {
+        return uint256(dealsMapping[_dealId].status);
     }
 
     /**
@@ -695,7 +707,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint  .
      */
-    function getAdditionalPaymentLimit(uint256 _dealId) external view returns(uint) {
+    function getAdditionalPaymentLimit(uint256 _dealId)
+        external
+        view
+        returns (uint256)
+    {
         return additionalPaymentLimit[_dealId];
     }
 
@@ -724,29 +740,25 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @notice  function to claim the successFee earned by HW for a specified deal.
      * @dev     onlyOwner restriction.
      * @param   _dealId _feeCollector.
-     */    
+     */
     function claimSuccessFee(uint256 _dealId, address _feeCollector)
         external
         onlyOwner
     {
         uint256 successFee = dealsMapping[_dealId].successFee;
 
-        if(dealsMapping[_dealId].paymentToken != address(0)) {
+        if (dealsMapping[_dealId].paymentToken != address(0)) {
             IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
-            paymentToken.transfer(_feeCollector, successFee );
-        }
-        else {
-            (bool payment, ) = payable(_feeCollector).call{
-                value: successFee
-            }("");
+            paymentToken.transfer(_feeCollector, successFee);
+        } else {
+            (bool payment, ) = payable(_feeCollector).call{value: successFee}(
+                ""
+            );
             require(payment, "payment failed");
-            
-            
-            
-    }
-            totalCollectedSuccessFee += successFee;
-            dealsMapping[_dealId].successFee = 0;
-            emit claimSuccessFeeEvent(_dealId,dealsMapping[_dealId].successFee );
+        }
+        totalCollectedSuccessFee += successFee;
+        dealsMapping[_dealId].successFee = 0;
+        emit claimSuccessFeeEvent(_dealId, dealsMapping[_dealId].successFee);
     }
 
     /**
@@ -755,26 +767,24 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _feeCollector  .
      */
     function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
-        
         for (uint256 i = 1; i <= dealIds.current(); i++) {
             uint256 successFee = dealsMapping[i].successFee;
-            if(successFee > 0) {
-            if(dealsMapping[i].paymentToken == address(0)) {
-                (bool payment, ) = payable(_feeCollector).call{
-                value: successFee
-            }("");
-            require(payment, "payment failed");
+            if (successFee > 0) {
+                if (dealsMapping[i].paymentToken == address(0)) {
+                    (bool payment, ) = payable(_feeCollector).call{
+                        value: successFee
+                    }("");
+                    require(payment, "payment failed");
+                } else {
+                    IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
+                    paymentToken.transfer(_feeCollector, successFee);
+                }
+                dealsMapping[i].successFee = 0;
             }
-            else {
-                IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
-                paymentToken.transfer(_feeCollector, successFee);
-            }
-            dealsMapping[i].successFee = 0;
-        }
         }
         emit claimSuccessFeeAllEvent(_feeCollector);
     }
-    
+
     /**
      * @notice  function to change the extra payment limit.
      * @dev     onlyOwner restriction.
@@ -789,12 +799,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @notice  function to get BnbPrice denominated in BUSD from pancakeswap.
      * @param   _amount  .
      */
-    function getBnbPrice(uint256 _amount) public view returns(uint) {
+    function getBnbPrice(uint256 _amount) public view returns (uint256) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
     }
 
+    
 }
-

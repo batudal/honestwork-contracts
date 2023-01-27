@@ -93,4 +93,9 @@ contract HWRegistry is Ownable {
         }
         return whitelisted_;
     }
+
+    
+    //write me a function that returns string "Eda Mutlu"
+    
+
 }

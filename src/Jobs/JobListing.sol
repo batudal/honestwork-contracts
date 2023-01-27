@@ -40,23 +40,43 @@ contract JobListing is Ownable {
         registry = IHWRegistry(_registry);
     }
 
+
+    /**
+     * @notice  checks if the address if whitelisted.
+     * @param   _token  .
+     */
     modifier checkWhitelist(address _token) {
         require(registry.isWhitelisted(_token), "Not whitelisted");
         _;
     }
 
+    /**
+    * @notice  returns all payments of a user.
+    * @param   _user  .
+     */
     function getPaymentsOf(
         address _user
     ) external view returns (Payment[] memory) {
         return payments[_user];
     }
 
+    /**
+    * @notice  returns the latest payment of a user.
+    * @param   _user  .
+     */
     function getLatestPayment(
         address _user
     ) external view returns (Payment memory) {
         return payments[_user][payments[_user].length - 1];
     }
 
+    
+    /**
+     * @notice  function to accept payments for listing.
+     * @dev     receives a whitelisted token, records the user to the payments array.
+     * @param   _token  .
+     * @param   _amount  .
+     */
     function payForListing(
         address _token,
         uint256 _amount
@@ -66,6 +86,15 @@ contract JobListing is Ownable {
         emit PaymentAdded(_token, _amount);
     }
 
+
+    /**
+     * @notice  function to accept payments for listing with native currency of the network.
+     * @dev     receives a native currency, records the user to the payments array, native currency is converted
+     * to a stable coin. Busd is used as a stable coin.
+     * @param   _minTokensOut  .
+     * @param   _allowedDelay  .
+     * @return  amounts from the router.
+     */
     function payForListingEth(uint256 _minTokensOut, uint256 _allowedDelay) external payable returns(uint[] memory) {
         require(msg.value > 0, "Can't pay 0 ETH");
         payments[msg.sender].push(
@@ -80,6 +109,12 @@ contract JobListing is Ownable {
         return amounts;
     }
 
+    /**
+     * @notice  function to withdraw earnings.
+     * @dev     sends the earnings to the owner.owner restriction
+     * @param   _token  .
+     * @param   _amount  .
+     */
     function withdrawEarnings(
         address _token,
         uint256 _amount
@@ -87,6 +122,11 @@ contract JobListing is Ownable {
         IERC20(_token).transfer(msg.sender, _amount);
     }
 
+    /**
+     * @notice  function to withdraw earnings.
+     * @dev     sends all the earnings to the owner. owner restriction.
+     * @param   _token  .
+     */
     function withdrawAllEarnings(address _token) external onlyOwner {
         IERC20(_token).transfer(
             msg.sender,
@@ -94,10 +134,17 @@ contract JobListing is Ownable {
         );
     }
 
+    /**
+     * @notice  function to withdraw remaining native currency.
+     */
     function withdrawAllEarningsEth() external onlyOwner {
         payable(msg.sender).transfer(address(this).balance);
     }
 
+    /**
+     * @notice  function to withdraw all tokens.
+     * @dev     owner restriction.
+     */
     function withdrawAllTokens() external onlyOwner {
         uint256 counter = registry.counter();
         for (uint256 i = 0; i < counter; i++) {
@@ -112,6 +159,11 @@ contract JobListing is Ownable {
         }
     }
 
+    /**
+     * @notice  function to get the price of bnb denominated in busd.
+     * @dev     uses the router to get the price.
+     * @param   _amount.
+     */
     function getBnbPrice(uint256 _amount) external view returns(uint) {
         uint256 reserve1;
         uint256 reserve2;
@@ -120,10 +172,18 @@ contract JobListing is Ownable {
     }
 
 
+    /**
+     * @notice  function to update the registry.
+     * @dev     owner restriction.
+     * @param   _registry.
+     */
     function updateRegistry(address _registry) external onlyOwner {
         registry = IHWRegistry(_registry);
     }
     
+    /**
+     * @notice  function get busd balance of this contract.
+     */
     function getBusdBalance() external view returns(uint) {
         return busd.balanceOf(address(this));
     }
