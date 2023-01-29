@@ -710,6 +710,27 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         return additionalPaymentLimit[_dealId];
     }
 
+    /**
+     * @notice  function to return the dealIds of a specified address.
+     * @param   _address  .
+     * @return  uint256[]  .
+     */
+    function getDealsOfAnAddress(address _address)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256[] memory dealsOfAnAddress = new uint[](dealIds.current());
+        uint256 arrayLocation = 0;
+        for(uint256 i = 0; i <= dealIds.current(); i++) {
+            if(dealsMapping[i].creator == _address || dealsMapping[i].recruiter == _address) {
+                dealsOfAnAddress[arrayLocation] = i;
+                arrayLocation++;
+            }
+        }
+        return dealsOfAnAddress;
+    }
+
     // admin functions
 
     /**
