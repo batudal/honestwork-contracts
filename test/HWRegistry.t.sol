@@ -84,4 +84,6 @@ contract HWRegistryTest is Test {
         assertEq(registry.isWhitelisted(address(token)), false);
     }
 
+
+
 }

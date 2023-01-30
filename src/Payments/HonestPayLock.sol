@@ -120,28 +120,17 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _nonce
+        uint256 _nonce,
+        uint8 v, bytes32 r, bytes32 s,
+        bytes32 _ethSignedMessageHash
     )
         external
         payable
         returns (
-            //bytes memory signature
             uint256
         )
     {
-        // if (msg.sender == _recruiter) {
-        //     require(
-        //         verify(
-        //             _creator,
-        //             _recruiter,
-        //             _creator,
-        //             _paymentToken,
-        //             _totalPayment,
-        //             _nonce,
-        //             signature
-        //         )
-        //     );
-        // }
+        require(recoverSigner(_ethSignedMessageHash, v,r,s) == _creator, "invalid signature, creator needs to sign the deal paramers first");
 
         require(
             registry.isAllowedAmount(_paymentToken, _totalPayment),
@@ -430,86 +419,18 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         );
     }
 
-    function getOfferHash(
-        address _employer,
-        address _creator,
-        address _paymentToken,
-        uint256 _totalAmount,
-        uint256 _nonce
-    ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _employer,
-                    _creator,
-                    _paymentToken,
-                    _totalAmount,
-                    _nonce
-                )
-            );
-    }
 
-    function getEthSignedMessageHash(bytes32 _messageHash)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19Ethereum Signed Message:\n32",
-                    _messageHash
-                )
-            );
-    }
-
-    function verify(
-        address _signer,
-        address _recruiter,
-        address _creator,
-        address _paymentToken,
-        uint256 _totalAmount,
-        uint256 _nonce,
-        bytes memory signature
-    ) internal pure returns (bool) {
-        bytes32 messageHash = getOfferHash(
-            _recruiter,
-            _creator,
-            _paymentToken,
-            _totalAmount,
-            _nonce
-        );
-        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
-
-        return recoverSigner(ethSignedMessageHash, signature) == _signer;
-    }
-
+    /**
+     * @notice  function to verify the signature.
+     * @return  returns the address of the signer.
+     */
     function recoverSigner(
         bytes32 _ethSignedMessageHash,
-        bytes memory _signature
+        uint8 v, bytes32 r, bytes32 s
     ) internal pure returns (address) {
-        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
-
         return ecrecover(_ethSignedMessageHash, v, r, s);
     }
 
-    function splitSignature(bytes memory sig)
-        internal
-        pure
-        returns (
-            bytes32 r,
-            bytes32 s,
-            uint8 v
-        )
-    {
-        require(sig.length == 65, "invalid signature length");
-
-        assembly {
-            r := mload(add(sig, 32))
-            s := mload(add(sig, 64))
-            v := byte(0, mload(add(sig, 96)))
-        }
-    }
 
     //Getters
 
