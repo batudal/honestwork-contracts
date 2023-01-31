@@ -188,8 +188,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _rating,
         uint256 _recruiterNFT
     ) external {
+
+        Deal storage currentDeal = dealsMapping[_dealId];
         require(
-            dealsMapping[_dealId].status == Status.OfferInitiated,
+            currentDeal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
         require(
@@ -197,25 +199,25 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "rating must be between 0 and 10"
         );
         require(
-            dealsMapping[_dealId].recruiter == msg.sender,
+            currentDeal.recruiter == msg.sender,
             "only recruiter can unlock payments"
         );
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter, 0) ==
+            hw721.tokenOfOwnerByIndex(currentDeal.recruiter, 0) ==
                 _recruiterNFT,
             "only recruiter owned nftId can be passed as an argument"
         );
 
-        dealsMapping[_dealId].availablePayment += _paymentAmount;
-        address _paymentToken = dealsMapping[_dealId].paymentToken;
+        currentDeal.availablePayment += _paymentAmount;
+        address _paymentToken = currentDeal.paymentToken;
 
         require(
-            dealsMapping[_dealId].totalPayment >=
-                dealsMapping[_dealId].availablePayment +
-                    dealsMapping[_dealId].paidAmount,
+            currentDeal.totalPayment >=
+                currentDeal.availablePayment +
+                    currentDeal.paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
-        dealsMapping[_dealId].creatorRating.push(_rating * 100);
+        currentDeal.creatorRating.push(_rating * 100);
 
         if (hw721.balanceOf(msg.sender) == 1) {
             uint256 grossRev = (
@@ -227,7 +229,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
         emit paymentUnlockedEvent(
             _dealId,
-            dealsMapping[_dealId].recruiter,
+            currentDeal.recruiter,
             _paymentAmount
         );
     }
@@ -240,19 +242,20 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      */
     function withdrawPayment(uint256 _dealId) external {
+        Deal storage currentDeal = dealsMapping[_dealId];
         require(
-            dealsMapping[_dealId].status == Status.OfferInitiated,
+            currentDeal.status == Status.OfferInitiated,
             "job should be active"
         );
         require(
-            dealsMapping[_dealId].recruiter == msg.sender,
+            currentDeal.recruiter == msg.sender,
             "only recruiter can withdraw payments"
         );
-        address _paymentToken = dealsMapping[_dealId].paymentToken;
-        uint256 amountToBeWithdrawn = dealsMapping[_dealId].totalPayment -
-            dealsMapping[_dealId].paidAmount;
+        address _paymentToken = currentDeal.paymentToken;
+        uint256 amountToBeWithdrawn = currentDeal.totalPayment -
+            currentDeal.paidAmount;
         if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(dealsMapping[_dealId].recruiter).call{
+            (bool payment, ) = payable(currentDeal.recruiter).call{
                 value: amountToBeWithdrawn
             }("");
             require(payment, "Failed to send payment");
@@ -264,8 +267,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             );
         }
 
-        dealsMapping[_dealId].status = Status.JobCancelled;
-        emit withdrawPaymentEvent(_dealId, dealsMapping[_dealId].status);
+        currentDeal.status = Status.JobCancelled;
+        emit withdrawPaymentEvent(_dealId, currentDeal.status);
     }
 
     /**
@@ -283,8 +286,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _rating,
         uint256 _creatorNFT
     ) external {
+        Deal storage currentDeal = dealsMapping[_dealId];
         require(
-            dealsMapping[_dealId].status == Status.OfferInitiated,
+            currentDeal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
 
@@ -293,27 +297,27 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "rating must be between 0 and 10"
         );
         require(
-            dealsMapping[_dealId].creator == msg.sender,
+            currentDeal.creator == msg.sender,
             "only creator can receive payments"
         );
         require(
-            dealsMapping[_dealId].availablePayment >= _withdrawAmount,
+            currentDeal.availablePayment >= _withdrawAmount,
             "desired payment is not available yet"
         );
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].creator, 0) ==
+            hw721.tokenOfOwnerByIndex(currentDeal.creator, 0) ==
                 _creatorNFT,
             "only creator owned nftId can be passed as an argument"
         );
-        address _paymentToken = dealsMapping[_dealId].paymentToken;
-        dealsMapping[_dealId].paidAmount += _withdrawAmount;
-        dealsMapping[_dealId].availablePayment -= _withdrawAmount;
-        dealsMapping[_dealId].recruiterRating.push(_rating * 100);
-        dealsMapping[_dealId].successFee +=
+        address _paymentToken = currentDeal.paymentToken;
+        currentDeal.paidAmount += _withdrawAmount;
+        currentDeal.availablePayment -= _withdrawAmount;
+        currentDeal.recruiterRating.push(_rating * 100);
+        currentDeal.successFee +=
             (_withdrawAmount * honestWorkSuccessFee) /
             100;
         if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(dealsMapping[_dealId].creator).call{
+            (bool payment, ) = payable(currentDeal.creator).call{
                 value: (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
             }("");
             require(payment, "Failed to send payment");
@@ -334,15 +338,15 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             hw721.recordGrossRevenue(_creatorNFT, grossRev);
         }
         if (
-            dealsMapping[_dealId].paidAmount >=
-            dealsMapping[_dealId].totalPayment
+            currentDeal.paidAmount >=
+            currentDeal.totalPayment
         ) {
-            dealsMapping[_dealId].status = Status.JobCompleted;
+            currentDeal.status = Status.JobCompleted;
         }
 
         emit claimPaymentEvent(
             _dealId,
-            dealsMapping[_dealId].creator,
+            currentDeal.creator,
             _withdrawAmount
         );
     }
@@ -362,8 +366,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT,
         uint256 _rating
     ) external payable {
+        Deal storage currentDeal = dealsMapping[_dealId];
         require(
-            dealsMapping[_dealId].status == Status.OfferInitiated,
+            currentDeal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
         require(
@@ -375,32 +380,32 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "you can not make more than 3 additional payments"
         );
         require(
-            dealsMapping[_dealId].status == Status.OfferInitiated,
+            currentDeal.status == Status.OfferInitiated,
             "job should be active"
         );
         require(
-            dealsMapping[_dealId].recruiter == msg.sender,
+            currentDeal.recruiter == msg.sender,
             "only recruiter can add payments"
         );
 
         require(
-            hw721.tokenOfOwnerByIndex(dealsMapping[_dealId].recruiter, 0) ==
+            hw721.tokenOfOwnerByIndex(currentDeal.recruiter, 0) ==
                 _recruiterNFT,
             "only recruiter owned nftId can be passed as an argument"
         );
-        address _paymentToken = dealsMapping[_dealId].paymentToken;
+        address _paymentToken = currentDeal.paymentToken;
         if (_paymentToken == address(0)) {
             require(
                 msg.value >= _payment,
                 "recruiter should deposit the additional payment"
             );
-            dealsMapping[_dealId].availablePayment += _payment;
-            dealsMapping[_dealId].totalPayment += _payment;
+            currentDeal.availablePayment += _payment;
+            currentDeal.totalPayment += _payment;
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
             paymentToken.transferFrom(msg.sender, address(this), _payment);
-            dealsMapping[_dealId].availablePayment += _payment;
-            dealsMapping[_dealId].totalPayment += _payment;
+            currentDeal.availablePayment += _payment;
+            currentDeal.totalPayment += _payment;
         }
 
         if (hw721.balanceOf(msg.sender) == 1) {
@@ -411,10 +416,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
 
         additionalPaymentLimit[_dealId] += 1;
-        dealsMapping[_dealId].creatorRating.push(_rating * 100);
+        currentDeal.creatorRating.push(_rating * 100);
         emit additionalPaymentEvent(
             _dealId,
-            dealsMapping[_dealId].recruiter,
+            currentDeal.recruiter,
             _payment
         );
     }
