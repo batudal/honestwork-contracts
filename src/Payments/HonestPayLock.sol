@@ -49,8 +49,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 paidAmount; //a variable to keep track of the payments made
         uint256 availablePayment; // a variable to keep track of the unlocked payment which can be claimed by the creator
         Status status; // deal Status
-        uint256[] recruiterRating; // recruiter's rating array
-        uint256[] creatorRating; // creator's rating array
+        uint128[] recruiterRating; // recruiter's rating array
+        uint128[] creatorRating; // creator's rating array
     }
     IHWRegistry public registry; //registry contract definition for retreiving the whitelisted payment mediums
     HonestWorkNFT public hw721; //nft contract definition for recording grossRevenues to the nft.
@@ -138,8 +138,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         );
         dealIds.increment();
         uint256 _dealId = dealIds.current();
-        uint256[] memory arr1;
-        uint256[] memory arr2;
+        uint128[] memory arr1;
+        uint128[] memory arr2;
         dealsMapping[_dealId] = Deal(
             _recruiter,
             _creator,
@@ -185,7 +185,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function unlockPayment(
         uint256 _dealId,
         uint256 _paymentAmount,
-        uint256 _rating,
+        uint128 _rating,
         uint256 _recruiterNFT
     ) external {
 
@@ -283,7 +283,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function claimPayment(
         uint256 _dealId,
         uint256 _withdrawAmount,
-        uint256 _rating,
+        uint128 _rating,
         uint256 _creatorNFT
     ) external {
         Deal storage currentDeal = dealsMapping[_dealId];
@@ -364,8 +364,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _dealId,
         uint256 _payment,
         uint256 _recruiterNFT,
-        uint256 _rating
+        uint128 _rating
     ) external payable {
+
         Deal storage currentDeal = dealsMapping[_dealId];
         require(
             currentDeal.status == Status.OfferInitiated,
@@ -529,7 +530,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function getRecruiterRating(uint256 _dealId)
         external
         view
-        returns (uint256[] memory)
+        returns (uint128[] memory)
     {
         return (dealsMapping[_dealId].recruiterRating);
     }
@@ -542,7 +543,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     function getCreatorRating(uint256 _dealId)
         external
         view
-        returns (uint256[] memory)
+        returns (uint128[] memory)
     {
         return (dealsMapping[_dealId].creatorRating);
     }
