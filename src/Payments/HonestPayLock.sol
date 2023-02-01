@@ -151,6 +151,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         require(_recruiter != address(0), "recruiter address cannot be 0");
         require(_creator != address(0), "creator address cannot be 0");
         require(_totalPayment > 0, "total payment cannot be 0");
+        require(_deadline > block.timestamp, "deadline cannot be in the past");
 
         bytes32 signedMessage = getMessageHash(
             _recruiter,
