@@ -33,7 +33,7 @@ contract SigUtils {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _nonce
+        uint256 _deadline
     ) public pure returns (bytes32) {
         return
             keccak256(
@@ -42,7 +42,7 @@ contract SigUtils {
                     _creator,
                     _paymentToken,
                     _totalPayment,
-                    _nonce
+                    _deadline
                 )
             );
     }

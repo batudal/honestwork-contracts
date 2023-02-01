@@ -110,7 +110,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _nonce,
+        uint256 _deadline,
         bytes memory _signature
     ) external payable returns (uint256) {
         (bytes32 r, bytes32 s, uint8 v) = SigUtils.splitSignature(_signature);
@@ -120,7 +120,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 _creator,
                 _paymentToken,
                 _totalPayment,
-                _nonce,
+                _deadline,
                 v,
                 r,
                 s
@@ -136,14 +136,14 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _creator.
      * @param   _paymentToken function checks if the paymentToken is whitelisted.
      * @param   _totalPayment.
-     * @param   _nonce.
+     * @param   _deadline.
      */
     function createDeal(
         address _recruiter,
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
-        uint256 _nonce,
+        uint256 _deadline,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -157,7 +157,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             _creator,
             _paymentToken,
             _totalPayment,
-            _nonce
+            _deadline
         );
 
         require(
