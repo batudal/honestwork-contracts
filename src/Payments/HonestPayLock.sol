@@ -60,8 +60,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
-    uint256 public extraPaymentLimit; //limit for additional payments--currently capped to 3
-    uint256 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
+    uint128 public extraPaymentLimit; //limit for additional payments--currently capped to 3
+    uint128 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
     uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
 
     mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
@@ -120,6 +120,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
+        //uint256 _downPayment,
         uint256 _nonce,
         uint8 v, bytes32 r, bytes32 s,
         bytes32 _ethSignedMessageHash
@@ -366,7 +367,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT,
         uint128 _rating
     ) external payable {
-
         Deal storage currentDeal = dealsMapping[_dealId];
         require(
             currentDeal.status == Status.OfferInitiated,
@@ -665,7 +665,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @dev     onlyOwner restriction, value is expressed as a percentage.
      * @param   _fee  .
      */
-    function changeSuccessFee(uint256 _fee) external onlyOwner {
+    function changeSuccessFee(uint128 _fee) external onlyOwner {
         honestWorkSuccessFee = _fee;
         emit successFeeChangedEvent(_fee);
     }
@@ -733,13 +733,13 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @dev     onlyOwner restriction.
      * @param   _limit  .
      */
-    function changeExtraPaymentLimit(uint256 _limit) external onlyOwner {
+    function changeExtraPaymentLimit(uint128 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit changeExtraPaymentLimitEvent(_limit);
     }
 
     /**
-     * @notice  function to get BnbPrice denominated in BUSD from pancakeswap.
+     * @notice  function to get Bnb price denominated in BUSD from pancakeswap.
      * @param   _amount  .
      */
     function getBnbPrice(uint256 _amount) public view returns (uint256) {

@@ -95,11 +95,11 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function _verify(
-        bytes32 leaf,
+        bytes32 _leaf,
         bytes32 _root,
         bytes32[] memory _proof
     ) internal pure returns (bool) {
-        return MerkleProof.verify(_proof, _root, leaf);
+        return MerkleProof.verify(_proof, _root, _leaf);
     }
 
     function _beforeTokenTransfer(
