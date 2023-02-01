@@ -29,8 +29,9 @@ import "forge-std/console.sol";
 import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
+import "../utils/SigUtils.sol";
 
-contract HonestPayLock is Ownable, ReentrancyGuard {
+contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     //@notice enum to keep track of the state of the deal
     enum Status {
         OfferInitiated,
@@ -104,6 +105,28 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         hw721 = HonestWorkNFT(_HW721);
     }
 
+    function createDealSignature(
+        address _recruiter,
+        address _creator,
+        address _paymentToken,
+        uint256 _totalPayment,
+        uint256 _nonce,
+        bytes memory _signature
+    ) external payable returns (uint256) {
+        (bytes32 r, bytes32 s, uint8 v) = SigUtils.splitSignature(_signature);
+        return
+            createDeal(
+                _recruiter,
+                _creator,
+                _paymentToken,
+                _totalPayment,
+                _nonce,
+                v,
+                r,
+                s
+            );
+    }
+
     /**
      * @notice function to create deals  .
      * @dev function fills in the deal Struct with the terms of the deal. 
@@ -121,16 +144,26 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         address _paymentToken,
         uint256 _totalPayment,
         uint256 _nonce,
-        uint8 v, bytes32 r, bytes32 s,
-        bytes32 _ethSignedMessageHash
-    )
-        external
-        payable
-        returns (
-            uint256
-        )
-    {
-        require(recoverSigner(_ethSignedMessageHash, v,r,s) == _creator, "invalid signature, creator needs to sign the deal paramers first");
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public payable returns (uint256) {
+        require(_recruiter != address(0), "recruiter address cannot be 0");
+        require(_creator != address(0), "creator address cannot be 0");
+        require(_totalPayment > 0, "total payment cannot be 0");
+
+        bytes32 signedMessage = getMessageHash(
+            _recruiter,
+            _creator,
+            _paymentToken,
+            _totalPayment,
+            _nonce
+        );
+
+        require(
+            recoverSigner(signedMessage, v, r, s) == _creator,
+            "invalid signature, creator needs to sign the deal paramers first"
+        );
 
         require(
             registry.isAllowedAmount(_paymentToken, _totalPayment),
@@ -188,7 +221,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint128 _rating,
         uint256 _recruiterNFT
     ) external {
-
         Deal storage currentDeal = dealsMapping[_dealId];
         require(
             currentDeal.status == Status.OfferInitiated,
@@ -213,8 +245,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
 
         require(
             currentDeal.totalPayment >=
-                currentDeal.availablePayment +
-                    currentDeal.paidAmount,
+                currentDeal.availablePayment + currentDeal.paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
         currentDeal.creatorRating.push(_rating * 100);
@@ -261,10 +292,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             require(payment, "Failed to send payment");
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.transfer(
-                msg.sender,
-                (amountToBeWithdrawn)
-            );
+            paymentToken.transfer(msg.sender, (amountToBeWithdrawn));
         }
 
         currentDeal.status = Status.JobCancelled;
@@ -305,8 +333,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             "desired payment is not available yet"
         );
         require(
-            hw721.tokenOfOwnerByIndex(currentDeal.creator, 0) ==
-                _creatorNFT,
+            hw721.tokenOfOwnerByIndex(currentDeal.creator, 0) == _creatorNFT,
             "only creator owned nftId can be passed as an argument"
         );
         address _paymentToken = currentDeal.paymentToken;
@@ -337,18 +364,11 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
             );
             hw721.recordGrossRevenue(_creatorNFT, grossRev);
         }
-        if (
-            currentDeal.paidAmount >=
-            currentDeal.totalPayment
-        ) {
+        if (currentDeal.paidAmount >= currentDeal.totalPayment) {
             currentDeal.status = Status.JobCompleted;
         }
 
-        emit claimPaymentEvent(
-            _dealId,
-            currentDeal.creator,
-            _withdrawAmount
-        );
+        emit claimPaymentEvent(_dealId, currentDeal.creator, _withdrawAmount);
     }
 
     /**
@@ -366,7 +386,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         uint256 _recruiterNFT,
         uint128 _rating
     ) external payable {
-
         Deal storage currentDeal = dealsMapping[_dealId];
         require(
             currentDeal.status == Status.OfferInitiated,
@@ -418,25 +437,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
 
         additionalPaymentLimit[_dealId] += 1;
         currentDeal.creatorRating.push(_rating * 100);
-        emit additionalPaymentEvent(
-            _dealId,
-            currentDeal.recruiter,
-            _payment
-        );
+        emit additionalPaymentEvent(_dealId, currentDeal.recruiter, _payment);
     }
-
-
-    /**
-     * @notice  function to verify the signature.
-     * @return  returns the address of the signer.
-     */
-    function recoverSigner(
-        bytes32 _ethSignedMessageHash,
-        uint8 v, bytes32 r, bytes32 s
-    ) internal pure returns (address) {
-        return ecrecover(_ethSignedMessageHash, v, r, s);
-    }
-
 
     //Getters
 
@@ -491,11 +493,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvailablePayment(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAvailablePayment(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return dealsMapping[_dealId].availablePayment;
     }
 
@@ -504,11 +504,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getJobCompletionRate(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getJobCompletionRate(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return ((dealsMapping[_dealId].paidAmount * 100) /
             dealsMapping[_dealId].totalPayment);
     }
@@ -527,11 +525,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getRecruiterRating(uint256 _dealId)
-        external
-        view
-        returns (uint128[] memory)
-    {
+    function getRecruiterRating(
+        uint256 _dealId
+    ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].recruiterRating);
     }
 
@@ -540,11 +536,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getCreatorRating(uint256 _dealId)
-        external
-        view
-        returns (uint128[] memory)
-    {
+    function getCreatorRating(
+        uint256 _dealId
+    ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].creatorRating);
     }
 
@@ -553,11 +547,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvgCreatorRating(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAvgCreatorRating(
+        uint256 _dealId
+    ) external view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -574,11 +566,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvgRecruiterRating(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAvgRecruiterRating(
+        uint256 _dealId
+    ) external view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -589,7 +579,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         }
         return (sum / dealsMapping[_dealId].recruiterRating.length);
     }
-    
+
     /**
      * @notice  function to return the totalSuccessFee claimable or claimed by HW.
      * @return  uint256.
@@ -607,11 +597,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getDealSuccessFee(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getDealSuccessFee(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return dealsMapping[_dealId].successFee;
     }
 
@@ -629,11 +617,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _dealId  .
      * @return  uint  .
      */
-    function getAdditionalPaymentLimit(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAdditionalPaymentLimit(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return additionalPaymentLimit[_dealId];
     }
 
@@ -642,15 +628,16 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @param   _address  .
      * @return  uint256[]  .
      */
-    function getDealsOfAnAddress(address _address)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function getDealsOfAnAddress(
+        address _address
+    ) public view returns (uint256[] memory) {
         uint256[] memory dealsOfAnAddress = new uint[](dealIds.current());
         uint256 arrayLocation = 0;
-        for(uint256 i = 0; i <= dealIds.current(); i++) {
-            if(dealsMapping[i].creator == _address || dealsMapping[i].recruiter == _address) {
+        for (uint256 i = 0; i <= dealIds.current(); i++) {
+            if (
+                dealsMapping[i].creator == _address ||
+                dealsMapping[i].recruiter == _address
+            ) {
                 dealsOfAnAddress[arrayLocation] = i;
                 arrayLocation++;
             }
@@ -684,10 +671,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
      * @dev     onlyOwner restriction.
      * @param   _dealId _feeCollector.
      */
-    function claimSuccessFee(uint256 _dealId, address _feeCollector)
-        external
-        onlyOwner
-    {
+    function claimSuccessFee(
+        uint256 _dealId,
+        address _feeCollector
+    ) external onlyOwner {
         uint256 successFee = dealsMapping[_dealId].successFee;
 
         if (dealsMapping[_dealId].paymentToken != address(0)) {
@@ -748,6 +735,4 @@ contract HonestPayLock is Ownable, ReentrancyGuard {
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
     }
-
-    
 }
