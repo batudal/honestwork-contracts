@@ -33,6 +33,7 @@ contract SigUtils {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
+        uint256 _downPayment,
         uint256 _deadline
     ) public pure returns (bytes32) {
         return
@@ -42,6 +43,7 @@ contract SigUtils {
                     _creator,
                     _paymentToken,
                     _totalPayment,
+                    _downPayment,
                     _deadline
                 )
             );

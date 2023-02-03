@@ -48,7 +48,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         uint256 totalPayment; //total payment amount denoted in the form of the payment token
         uint256 successFee; //a variable to keep track of honestWork success fee
         uint256 paidAmount; //a variable to keep track of the payments made
-        uint256 availablePayment; // a variable to keep track of the unlocked payment which can be claimed by the creator
+        uint256 claimablePayment; // a variable to keep track of the unlocked payment which can be claimed by the creator
         Status status; // deal Status
         uint128[] recruiterRating; // recruiter's rating array
         uint128[] creatorRating; // creator's rating array
@@ -61,12 +61,14 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
-    uint128 public extraPaymentLimit; //limit for additional payments--currently capped to 3
+    uint64 public extraPaymentLimit; //limit for additional payments--currently capped to 3
     uint128 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
+    bool public nativePaymentAllowed;
     uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
 
     mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
     mapping(uint256 => Deal) public dealsMapping; //mapping for keeping track of each offered deal. DealIds are unique.
+
 
     event OfferCreatedEvent(
         address indexed _recruiter,
@@ -110,6 +112,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
+        uint256 _downPayment,
         uint256 _deadline,
         bytes memory _signature
     ) external payable returns (uint256) {
@@ -120,6 +123,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 _creator,
                 _paymentToken,
                 _totalPayment,
+                _downPayment,
                 _deadline,
                 v,
                 r,
@@ -143,6 +147,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         address _creator,
         address _paymentToken,
         uint256 _totalPayment,
+        uint256 _downPayment,
         uint256 _deadline,
         uint8 v,
         bytes32 r,
@@ -153,11 +158,16 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         require(_totalPayment > 0, "total payment cannot be 0");
         require(_deadline > block.timestamp, "deadline cannot be in the past");
 
+        if(_paymentToken == address(0)){
+            require(nativePaymentAllowed, "native payment is not allowed");
+        }
+
         bytes32 signedMessage = getMessageHash(
             _recruiter,
             _creator,
             _paymentToken,
             _totalPayment,
+            _downPayment,
             _deadline
         );
 
@@ -181,7 +191,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             _totalPayment,
             0,
             0,
-            0,
+            _downPayment,
             Status.OfferInitiated,
             arr1,
             arr2
@@ -199,6 +209,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 (_totalPayment)
             );
         }
+
+        emit paymentUnlockedEvent(_dealId, _recruiter, _downPayment);
+
         emit OfferCreatedEvent(
             _recruiter,
             _creator,
@@ -235,18 +248,13 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             currentDeal.recruiter == msg.sender,
             "only recruiter can unlock payments"
         );
-        require(
-            hw721.tokenOfOwnerByIndex(currentDeal.recruiter, 0) ==
-                _recruiterNFT,
-            "only recruiter owned nftId can be passed as an argument"
-        );
 
-        currentDeal.availablePayment += _paymentAmount;
+        currentDeal.claimablePayment += _paymentAmount;
         address _paymentToken = currentDeal.paymentToken;
 
         require(
             currentDeal.totalPayment >=
-                currentDeal.availablePayment + currentDeal.paidAmount,
+                currentDeal.claimablePayment + currentDeal.paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
         currentDeal.creatorRating.push(_rating * 100);
@@ -330,7 +338,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             "only creator can receive payments"
         );
         require(
-            currentDeal.availablePayment >= _withdrawAmount,
+            currentDeal.claimablePayment >= _withdrawAmount,
             "desired payment is not available yet"
         );
         require(
@@ -339,7 +347,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         );
         address _paymentToken = currentDeal.paymentToken;
         currentDeal.paidAmount += _withdrawAmount;
-        currentDeal.availablePayment -= _withdrawAmount;
+        currentDeal.claimablePayment -= _withdrawAmount;
         currentDeal.recruiterRating.push(_rating * 100);
         currentDeal.successFee +=
             (_withdrawAmount * honestWorkSuccessFee) /
@@ -357,14 +365,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 ((_withdrawAmount * (100 - honestWorkSuccessFee)) / 100)
             );
         }
-        if (hw721.balanceOf(msg.sender) == 1) {
             uint256 grossRev = (
                 _paymentToken == address(0)
                     ? getBnbPrice(_withdrawAmount)
                     : _withdrawAmount
             );
             hw721.recordGrossRevenue(_creatorNFT, grossRev);
-        }
         if (currentDeal.paidAmount >= currentDeal.totalPayment) {
             currentDeal.status = Status.JobCompleted;
         }
@@ -420,12 +426,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 msg.value >= _payment,
                 "recruiter should deposit the additional payment"
             );
-            currentDeal.availablePayment += _payment;
+            currentDeal.claimablePayment += _payment;
             currentDeal.totalPayment += _payment;
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
             paymentToken.transferFrom(msg.sender, address(this), _payment);
-            currentDeal.availablePayment += _payment;
+            currentDeal.claimablePayment += _payment;
             currentDeal.totalPayment += _payment;
         }
 
@@ -494,10 +500,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvailablePayment(
+    function getclaimablePayment(
         uint256 _dealId
     ) external view returns (uint256) {
-        return dealsMapping[_dealId].availablePayment;
+        return dealsMapping[_dealId].claimablePayment;
     }
 
     /**
@@ -721,9 +727,18 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @dev     onlyOwner restriction.
      * @param   _limit  .
      */
-    function changeExtraPaymentLimit(uint128 _limit) external onlyOwner {
+    function changeExtraPaymentLimit(uint64 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit changeExtraPaymentLimitEvent(_limit);
+    }
+    
+    /**
+     * @notice  function to change nativePayment allowances.
+     * @dev     onlyOwner restriction.
+     * @param   _bool  .
+     */
+    function allowNativePayment(bool _bool) external onlyOwner {
+        nativePaymentAllowed = _bool;
     }
 
     /**
