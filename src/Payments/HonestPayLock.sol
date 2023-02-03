@@ -162,14 +162,14 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             require(nativePaymentAllowed, "native payment is not allowed");
         }
 
-        bytes32 signedMessage = getMessageHash(
+        bytes32 signedMessage = getEthSignedMessageHash(getMessageHash(
             _recruiter,
             _creator,
             _paymentToken,
             _totalPayment,
             _downPayment,
             _deadline
-        );
+        ));
 
         require(
             recoverSigner(signedMessage, v, r, s) == _creator,

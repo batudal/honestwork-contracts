@@ -91,7 +91,8 @@ contract HonestPayLockTest is Test {
 
     function testCreateDeal() public {
         bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, block.timestamp+1 days);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, message);
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
 
         vm.prank(recruiter1);
         uint256 x = hplock.createDeal{value: 10 ether}(
