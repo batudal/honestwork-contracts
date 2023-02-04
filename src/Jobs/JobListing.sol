@@ -15,7 +15,6 @@ import "../utils/IPool.sol";
 /// @dev It is open-ended contract used specifically for the job listing payments.
 /// @dev Imports are relative since abigen didn't want to work with my remappings. :P
 
-
 // polygon usdc 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
 //pancake router 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
@@ -26,11 +25,9 @@ contract JobListing is Ownable {
         uint256 listingDate;
     }
 
-
-
-
     IHWRegistry public registry;
-    IUniswapV2Router01 public router = IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
+    IUniswapV2Router01 public router =
+        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
 
@@ -39,7 +36,6 @@ contract JobListing is Ownable {
     constructor(address _registry) {
         registry = IHWRegistry(_registry);
     }
-
 
     /**
      * @notice  checks if the address if whitelisted.
@@ -51,8 +47,8 @@ contract JobListing is Ownable {
     }
 
     /**
-    * @notice  returns all payments of a user.
-    * @param   _user  .
+     * @notice  returns all payments of a user.
+     * @param   _user  .
      */
     function getPaymentsOf(
         address _user
@@ -61,8 +57,8 @@ contract JobListing is Ownable {
     }
 
     /**
-    * @notice  returns the latest payment of a user.
-    * @param   _user  .
+     * @notice  returns the latest payment of a user.
+     * @param   _user  .
      */
     function getLatestPayment(
         address _user
@@ -70,7 +66,6 @@ contract JobListing is Ownable {
         return payments[_user][payments[_user].length - 1];
     }
 
-    
     /**
      * @notice  function to accept payments for listing.
      * @dev     receives a whitelisted token, records the user to the payments array.
@@ -86,7 +81,6 @@ contract JobListing is Ownable {
         emit PaymentAdded(_token, _amount);
     }
 
-
     /**
      * @notice  function to accept payments for listing with native currency of the network.
      * @dev     receives a native currency, records the user to the payments array, native currency is converted
@@ -95,7 +89,10 @@ contract JobListing is Ownable {
      * @param   _allowedDelay  .
      * @return  amounts from the router.
      */
-    function payForListingEth(uint256 _minTokensOut, uint256 _allowedDelay) external payable returns(uint[] memory) {
+    function payForListingEth(
+        uint256 _minTokensOut,
+        uint256 _allowedDelay
+    ) external payable returns (uint[] memory) {
         require(msg.value > 0, "Can't pay 0 ETH");
         payments[msg.sender].push(
             Payment(address(0), msg.value, block.timestamp)
@@ -104,7 +101,12 @@ contract JobListing is Ownable {
         address[] memory path = new address[](2);
         path[0] = router.WETH();
         path[1] = address(busd);
-        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(_minTokensOut, path , address(this), block.timestamp + _allowedDelay);
+        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(
+            _minTokensOut,
+            path,
+            address(this),
+            block.timestamp + _allowedDelay
+        );
         emit PaymentAddedETH(msg.value);
         return amounts;
     }
@@ -148,14 +150,14 @@ contract JobListing is Ownable {
     function withdrawAllTokens() external onlyOwner {
         uint256 counter = registry.counter();
         for (uint256 i = 0; i < counter; i++) {
-            if(registry.allWhitelisted()[i].token != address(0)) {
-            IERC20(registry.allWhitelisted()[i].token).transfer(
-                msg.sender,
-                IERC20(registry.allWhitelisted()[i].token).balanceOf(
-                    address(this)
-                )
-            );
-        }
+            if (registry.allWhitelisted()[i].token != address(0)) {
+                IERC20(registry.allWhitelisted()[i].token).transfer(
+                    msg.sender,
+                    IERC20(registry.allWhitelisted()[i].token).balanceOf(
+                        address(this)
+                    )
+                );
+            }
         }
     }
 
@@ -164,13 +166,12 @@ contract JobListing is Ownable {
      * @dev     uses the router to get the price.
      * @param   _amount.
      */
-    function getBnbPrice(uint256 _amount) external view returns(uint) {
+    function getBnbPrice(uint256 _amount) external view returns (uint) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
     }
-
 
     /**
      * @notice  function to update the registry.
@@ -180,11 +181,11 @@ contract JobListing is Ownable {
     function updateRegistry(address _registry) external onlyOwner {
         registry = IHWRegistry(_registry);
     }
-    
+
     /**
      * @notice  function get busd balance of this contract.
      */
-    function getBusdBalance() external view returns(uint) {
+    function getBusdBalance() external view returns (uint) {
         return busd.balanceOf(address(this));
     }
 
