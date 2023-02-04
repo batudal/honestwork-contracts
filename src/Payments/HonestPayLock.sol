@@ -157,6 +157,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         require(_creator != address(0), "creator address cannot be 0");
         require(_totalPayment > 0, "total payment cannot be 0");
         require(_deadline > block.timestamp, "deadline cannot be in the past");
+        reqıire(_creator != _recruiter, "creator and recruiter cannot be the same address");
 
         if(_paymentToken == address(0)){
             require(nativePaymentAllowed, "native payment is not allowed");
