@@ -19,7 +19,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     address public honestPayLock;
     address public metadataImplementation;
 
-    uint256 public constant TOKEN_CAP = 1000;
+    uint256 public constant TOKEN_CAP = 1001;
     uint256 public tierOneFee = 100 ether;
     uint256 public tierTwoFee = 250 ether;
     uint256 public tierThreeFee = 300 ether;
@@ -59,16 +59,43 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         whitelistRoot = _root;
     }
 
+    function withdraw(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, _amount);
+    }
+
     function recordGrossRevenue(
         uint256 _nftId,
         uint256 _revenue
     ) external onlyHonestPay {
+        require(honestPayLock != address(0), "HonestPayLock not set");
         grossRevenue[_nftId] += _revenue;
         emit RevenueIncrease(_nftId, _revenue);
     }
 
     function setHonestPayLock(address _honestPayLock) external onlyOwner {
         honestPayLock = _honestPayLock;
+    }
+
+    function setRevenueTiers(
+        string[] memory _revenueTiers,
+        uint256[] memory _revenueThresholds
+    ) external onlyOwner {
+        revenueTiers = _revenueTiers;
+        revenueThresholds = _revenueThresholds;
+    }
+
+    function adminMint(
+        address _to,
+        uint256 _tier,
+        uint256 _revenue
+    ) external onlyOwner {
+        require(_tokenIds.current() < TOKEN_CAP, "Token cap reached");
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(_to, newTokenId);
+        tier[newTokenId] = _tier;
+        grossRevenue[newTokenId] = _revenue;
+        emit Mint(newTokenId, _to);
     }
 
     // view fxns
@@ -219,7 +246,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         return newItemId;
     }
 
-    function upgradeToken(uint256 _levels) external payable {
+    function upgradeToken(address _token, uint256 _levels) external {
         require(_levels == 1 || _levels == 2);
         require(balanceOf(msg.sender) == 1);
         uint256 _tokenId = tokenOfOwnerByIndex(msg.sender, 0);
@@ -227,18 +254,20 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         if (_levels == 2) {
             require(tier[_tokenId] == 1);
             tier[_tokenId] += 2;
+            require(
+                registry.isAllowedAmount(_token, tierTwoFee),
+                "token not allowed"
+            );
+            IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
             tier[_tokenId]++;
+            require(
+                registry.isAllowedAmount(_token, tierOneFee),
+                "token not allowed"
+            );
+            IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
 
         emit Upgrade(_tokenId, tier[_tokenId]);
-    }
-
-    function setRevenueTiers(
-        string[] memory _revenueTiers,
-        uint256[] memory _revenueThresholds
-    ) external onlyOwner {
-        revenueTiers = _revenueTiers;
-        revenueThresholds = _revenueThresholds;
     }
 }
