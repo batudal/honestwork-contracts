@@ -5,34 +5,49 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./Payments/HonestPayLock.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Registry/IHWRegistry.sol";
+import "./utils/Base64.sol";
 
 contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
-    Counters.Counter public _tokenIds;
-    uint256 public MINT_FEE = 1 ether;
-    uint256 public constant TOKEN_CAP = 10000;
-    uint256 public tier2Fee = 100 ether;
-    uint256 public tier3Fee = 1000 ether;
-    bytes32 public whitelistRoot;
 
-    //@notice  2 1- tier1  2-tier2 3-tier3
+    Counters.Counter public _tokenIds;
+    bytes32 public whitelistRoot;
+    IHWRegistry public registry;
+    address public honestPayLock;
+    address public metadataImplementation;
+
+    uint256 public constant TOKEN_CAP = 1001;
+    uint256 public tierOneFee = 100 ether;
+    uint256 public tierTwoFee = 250 ether;
+    uint256 public tierThreeFee = 300 ether;
+    string[] private revenueTiers = [
+        "< $1000",
+        "$1000 - $10,000",
+        "$10,000 - $100,000",
+        "HonestChad"
+    ];
+    uint256[] private revenueThresholds = [1000e18, 10000e18, 100000e18];
+
     mapping(address => bool) public whitelistCap;
     mapping(uint256 => uint256) public tier;
     mapping(uint256 => uint256) public grossRevenue;
 
-    event RevenueIncreased(uint256 id, uint256 revenue);
-    event Upgraded(uint256 id, uint256 tier);
+    event RevenueIncrease(uint256 id, uint256 revenue);
+    event Upgrade(uint256 id, uint256 tier);
     event Mint(uint256 id, address user);
 
-    HonestPayLock public honestPayLock;
-
-    constructor() ERC721("HonestWork", "HW") {}
+    constructor(
+        address _registry
+    ) ERC721("HonestWork Genesis", "HonestWork Genesis") {
+        registry = IHWRegistry(_registry);
+    }
 
     modifier onlyHonestPay() {
         require(
-            msg.sender == address(honestPayLock),
+            msg.sender == honestPayLock,
             "only HonestWork contract can record gross revenue"
         );
         _;
@@ -44,24 +59,43 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         whitelistRoot = _root;
     }
 
-    function changeTierTwoFee(uint256 _newFee) external onlyOwner {
-        tier2Fee = _newFee;
-    }
-
-    function changeTierThreeFee(uint256 _newFee) external onlyOwner {
-        tier3Fee = _newFee;
+    function withdraw(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, _amount);
     }
 
     function recordGrossRevenue(
         uint256 _nftId,
         uint256 _revenue
     ) external onlyHonestPay {
+        require(honestPayLock != address(0), "HonestPayLock not set");
         grossRevenue[_nftId] += _revenue;
-        emit RevenueIncreased(_nftId, _revenue);
+        emit RevenueIncrease(_nftId, _revenue);
     }
 
-    function setHonestPayLock(HonestPayLock _honestPayLock) external onlyOwner {
+    function setHonestPayLock(address _honestPayLock) external onlyOwner {
         honestPayLock = _honestPayLock;
+    }
+
+    function setRevenueTiers(
+        string[] memory _revenueTiers,
+        uint256[] memory _revenueThresholds
+    ) external onlyOwner {
+        revenueTiers = _revenueTiers;
+        revenueThresholds = _revenueThresholds;
+    }
+
+    function adminMint(
+        address _to,
+        uint256 _tier,
+        uint256 _revenue
+    ) external onlyOwner {
+        require(_tokenIds.current() < TOKEN_CAP, "Token cap reached");
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(_to, newTokenId);
+        tier[newTokenId] = _tier;
+        grossRevenue[newTokenId] = _revenue;
+        emit Mint(newTokenId, _to);
     }
 
     // view fxns
@@ -79,16 +113,57 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function supportsInterface(
-        bytes4 interfaceId
+        bytes4 _interfaceId
     ) public view override(ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        return super.supportsInterface(_interfaceId);
+    }
+
+    function getRevenueTier(
+        uint256 _tokenId
+    ) public view returns (string memory) {
+        uint256 rev = grossRevenue[_tokenId];
+        if (rev < revenueThresholds[0]) {
+            return revenueTiers[0];
+        } else if (rev < revenueThresholds[1]) {
+            return revenueTiers[1];
+        } else if (rev < revenueThresholds[2]) {
+            return revenueTiers[2];
+        } else return revenueTiers[3];
+    }
+
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override returns (string memory) {
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "HonestWork Genesis #',
+                        _toString(_tokenId),
+                        '", "description": "HonestWork Genesis NFTs are the gateway to HonestWork ecosystem.",',
+                        '"image": "https://honestwork-userfiles.fra1.cdn.digitaloceanspaces.com/genesis-nft/',
+                        _toString(_tokenId),
+                        '.png", "external_url": "https://honestwork.app",',
+                        '"attributes": [ { "trait_type": "Tier", "value": ',
+                        _toString(tier[_tokenId]),
+                        ', "max_value":3 }, { "trait_type": "Gross Revenue ($)", "value": ',
+                        _toString(grossRevenue[_tokenId] / 1e18),
+                        '}, { "trait_type": "Revenue Tier", "value": "',
+                        getRevenueTier(_tokenId),
+                        '" }]}'
+                    )
+                )
+            )
+        );
+
+        string memory output = string(
+            abi.encodePacked("data:application/json;base64,", json)
+        );
+
+        return output;
     }
 
     // internal fxns
-
-    function _baseURI() internal pure override returns (string memory) {
-        return "AABDAF"; // HW URI
-    }
 
     function _whitelistLeaf(address _address) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_address));
@@ -103,32 +178,59 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 batchSize
+        address _from,
+        address _to,
+        uint256 _tokenId,
+        uint256 _batchSize
     ) internal override(ERC721, ERC721Enumerable) {
-        require(balanceOf(to) == 0, "only one nft at a time");
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        require(balanceOf(_to) == 0, "only one nft at a time");
+        super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
+    }
+
+    function _toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 
     // mutative fxns
 
-    function publicMint(address recipient) external payable returns (uint256) {
-        _tokenIds.increment();
+    function publicMint(address _token) external returns (uint256) {
+        require(
+            registry.isAllowedAmount(_token, tierOneFee),
+            "token not allowed"
+        );
+        IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         uint256 newItemId = _tokenIds.current();
-        require(msg.value > MINT_FEE, "not enough funds");
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
-        _mint(recipient, newItemId);
+        _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
-        emit Mint(newItemId, recipient);
+        _tokenIds.increment();
+        emit Mint(newItemId, msg.sender);
         return newItemId;
     }
 
     function whitelistMint(
-        address recipient,
+        address _token,
         bytes32[] calldata _proof
     ) external returns (uint256) {
+        require(
+            registry.isAllowedAmount(_token, tierOneFee),
+            "token not allowed"
+        );
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
@@ -138,26 +240,34 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         );
 
         whitelistCap[msg.sender] = true;
-        _mint(recipient, newItemId);
+        _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
 
         return newItemId;
     }
 
-    //solve price fluctuation
-    function upgradeToken(uint256 _tokenId, uint256 _tier) external payable {
-        require(
-            ownerOf(_tokenId) == msg.sender,
-            "only owned tokens can be claimed"
-        );
-        if (_tier == 2) {
-            require(msg.value > tier2Fee);
-        } else if (_tier == 3) {
-            require(msg.value > tier3Fee);
+    function upgradeToken(address _token, uint256 _levels) external {
+        require(_levels == 1 || _levels == 2);
+        require(balanceOf(msg.sender) == 1);
+        uint256 _tokenId = tokenOfOwnerByIndex(msg.sender, 0);
+        require(tier[_tokenId] != 3);
+        if (_levels == 2) {
+            require(tier[_tokenId] == 1);
+            tier[_tokenId] += 2;
+            require(
+                registry.isAllowedAmount(_token, tierTwoFee),
+                "token not allowed"
+            );
+            IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
-            revert("only 3 tiers possible");
+            tier[_tokenId]++;
+            require(
+                registry.isAllowedAmount(_token, tierOneFee),
+                "token not allowed"
+            );
+            IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
-        tier[_tokenId] = _tier;
-        emit Upgraded(_tokenId, _tier);
+
+        emit Upgrade(_tokenId, tier[_tokenId]);
     }
 }
