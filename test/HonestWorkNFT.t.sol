@@ -17,7 +17,7 @@ contract HonestWorkNFTTest is Test {
     HonestWorkNFT public honestWorkNFT;
 
     function setUp() public {
-        honestWorkNFT = new HonestWorkNFT();
+        honestWorkNFT = new HonestWorkNFT(address(0));
 
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
