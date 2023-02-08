@@ -57,7 +57,7 @@ contract JobListingTest is Test {
     }
 
     function testSetup() public {
-        assertEq(token.balanceOf(address(deployer)),49 ether);
+        assertEq(token.balanceOf(address(deployer)),49999 ether);
         assertEq(registry.isWhitelisted(address(token)), false);
         assertEq(token.balanceOf(address(recruiter1)),1e18);
 
@@ -75,7 +75,7 @@ contract JobListingTest is Test {
 
         assertEq(token.balanceOf(address(recruiter1)),0 ether);
         assertEq(token.balanceOf(address(jobListing)),1 ether);
-        assertEq(token.balanceOf(address(deployer)),49 ether);
+        assertEq(token.balanceOf(address(deployer)),49999 ether);
         assertEq(token.balanceOf(address(registry)),0 ether);
         assertEq(jobListing.getLatestPayment(address(recruiter1)).amount,1 ether);
         assertEq(jobListing.getLatestPayment(address(recruiter1)).token,address(token));

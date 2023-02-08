@@ -20,9 +20,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     address public metadataImplementation;
 
     uint256 public constant TOKEN_CAP = 1001;
-    uint256 public tierOneFee = 100 ether;
-    uint256 public tierTwoFee = 250 ether;
-    uint256 public tierThreeFee = 300 ether;
+    uint256 public tierOneFee = 1 ether;
+    uint256 public tierTwoFee = 1 ether;
+    uint256 public tierThreeFee = 1 ether;
     string[] private revenueTiers = [
         "< $1000",
         "$1000 - $10,000",
@@ -224,13 +224,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function whitelistMint(
-        address _token,
         bytes32[] calldata _proof
     ) external returns (uint256) {
-        require(
-            registry.isAllowedAmount(_token, tierOneFee),
-            "token not allowed"
-        );
+        require(!whitelistCap[msg.sender], "whitelist cap reached");
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");

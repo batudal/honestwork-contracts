@@ -14,10 +14,38 @@ contract HonestWorkNFTTest is Test {
     address public recruiter2;
     address public creator1;
     address public creator2;
+    
+
+    SigUtils public sigUtils;
+    MockToken public token;
+    MockToken public token2;
+    HonestPayLock public hplock;
     HonestWorkNFT public honestWorkNFT;
+    HWRegistry public registry;
 
     function setUp() public {
-        honestWorkNFT = new HonestWorkNFT(address(0));
+
+
+        registry = new HWRegistry();
+        honestWorkNFT = new HonestWorkNFT(address(registry));
+        hplock = new HonestPayLock(
+            address(registry),
+            address(honestWorkNFT)
+        );
+        sigUtils = new SigUtils();
+
+        token = new MockToken("MCK", "MOCK");
+        token2 = new MockToken("MCK", "MOCK");
+
+
+        vm.prank(deployer);
+        honestWorkNFT.setHonestPayLock(address(hplock));
+        vm.prank(deployer);
+        registry.addWhitelisted(address(0), 1000 ether);
+        vm.prank(deployer);
+        registry.addWhitelisted(address(token), 1000 ether);
+        vm.prank(deployer);
+        registry.addWhitelisted(address(token2), 1000 ether);
 
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
@@ -45,7 +73,7 @@ contract HonestWorkNFTTest is Test {
 
         vm.prank(deployer);
         honestWorkNFT.whitelistMint(
-            address(deployer),proof
+            proof
         );
         assertEq(honestWorkNFT.balanceOf(address(deployer)), 1);
     }
