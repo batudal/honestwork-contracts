@@ -222,9 +222,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             _paymentToken
         );
 
-        
-
+        if(_downPayment != 0) {
         unlockPayment(_dealId, _downPayment, 0, _recruiterNFTId);
+    }
         return _dealId;
     }
 
@@ -777,5 +777,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
+    }
+
+    function getNFTGrossRevenue(uint256 _tokenId) public view returns(uint256) {
+        return nftGrossRevenue[_tokenId];
     }
 }
