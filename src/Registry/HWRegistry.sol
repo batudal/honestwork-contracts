@@ -4,6 +4,7 @@ pragma solidity 0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "../Payments/HonestPayLock.sol";
 
 contract HWRegistry is Ownable {
     struct Whitelist {
@@ -11,9 +12,13 @@ contract HWRegistry is Ownable {
         uint256 maxAllowed;
     }
 
+
     Counters.Counter public counter;
 
+    HonestPayLock public honestPayLock;
+
     mapping(uint256 => Whitelist) public whitelisted;
+    mapping(uint256 => uint256) public nftGrossRevenue;
 
     event WhitelistedAdded(address indexed _address, uint256 _maxAllowed);
     event WhitelistedRemoved(address indexed _address);
@@ -92,6 +97,31 @@ contract HWRegistry is Ownable {
             whitelisted_[i] = whitelisted[i];
         }
         return whitelisted_;
+    }
+
+    function setHonestPayLock(address _address) external onlyOwner returns (bool) {
+        honestPayLock = HonestPayLock(_address);
+        return true;
+    }
+
+    function setNFTGrossRevenue(uint256 _id, uint256 _amount)
+        external
+        onlyHonestPayLock
+    {
+        nftGrossRevenue[_id] += _amount;
+    }
+
+    modifier onlyHonestPayLock() {
+        require(
+            msg.sender == address(honestPayLock),
+            "HWRegistry: Only HonestPayLock can call this function"
+        );
+        _;
+    }
+
+
+    function getNFTGrossRevenue(uint256 _id) external view returns (uint256) {
+        return nftGrossRevenue[_id];
     }
 
     

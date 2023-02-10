@@ -61,7 +61,7 @@ contract HonestPayLockTest is Test {
         token.transfer(address(creator1), 31 ether);
         token.transfer(address(creator2), 31 ether);
 
-
+        registry.setHonestPayLock(address(hplock));
 
 
         vm.deal(recruiter1, 100 ether);
@@ -256,7 +256,7 @@ contract HonestPayLockTest is Test {
         vm.warp(500);
         assertEq(hplock.getclaimablePayment(dealId), 5 ether);
         assertEq(hplock.getAvgCreatorRating(dealId), 800);
-        assertEq(hplock.getNFTGrossRevenue(nftId), hplock.getBnbPrice(5 ether));
+        assertEq(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(5 ether));
 
         vm.prank(creator1);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -326,16 +326,16 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 7 ether, 10, nftId2);
 
-        assertApproxEqAbs(hplock.getNFTGrossRevenue(nftId), hplock.getBnbPrice(7 ether), 1000000);
-        assertApproxEqAbs(hplock.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(7 ether),100000);
+        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(7 ether), 1000000);
+        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(7 ether),100000);
 
         vm.prank(recruiter1);
         hplock.unlockPayment(dealId, 3 ether, 7, nftId);
         vm.prank(creator1);
         hplock.claimPayment(dealId, 3 ether, 10, nftId2);
 
-        assertApproxEqAbs(hplock.getNFTGrossRevenue(nftId), hplock.getBnbPrice(10 ether), 1000000);
-        assertApproxEqAbs(hplock.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(10 ether),100000);
+        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(10 ether), 1000000);
+        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(10 ether),100000);
         assertEq(hplock.getDealStatus(dealId), 1);
 
         message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 20 ether,0, 1);
@@ -728,7 +728,7 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         assertApproxEqAbs(token.balanceOf(address(creator1)), 40 ether,500000000000000000);
         vm.prank(recruiter1);
-        assertApproxEqAbs(hplock.getNFTGrossRevenue(nftId2),10 ether,10 ether * 6 / 100);
+        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2),10 ether,10 ether * 6 / 100);
     }
 
 
