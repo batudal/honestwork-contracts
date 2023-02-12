@@ -9,18 +9,16 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/Base64.sol";
 
-contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
+contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
     using Counters for Counters.Counter;
-
     Counters.Counter public _tokenIds;
     bytes32 public whitelistRoot;
     address public metadataImplementation;
     string public baseUri;
-
     uint256 public constant TOKEN_CAP = 1001;
-    uint256 public tierOneFee = 100 ether;
-    uint256 public tierTwoFee = 250 ether;
-    uint256 public tierThreeFee = 300 ether;
+    uint256 public tierOneFee = 100e18;
+    uint256 public tierTwoFee = 250e18;
+    uint256 public tierThreeFee = 300e18;
 
     mapping(address => bool) public whitelistedTokens;
     mapping(address => bool) public whitelistCap;
@@ -44,7 +42,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     function whitelistToken(address _token) external onlyOwner {
         whitelistedTokens[_token] = true;
     }
-
+    
     function setWhitelistRoot(bytes32 _root) external onlyOwner {
         whitelistRoot = _root;
     }
@@ -72,6 +70,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         uint256 _tokenId
     ) public view override returns (string memory) {
         return string(abi.encodePacked(baseUri, _toString(_tokenId)));
+
     }
 
     // internal fxns
@@ -121,6 +120,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
 
     function publicMint(address _token) external returns (uint256) {
         require(whitelistedTokens[_token], "token not whitelisted");
+
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         uint256 newItemId = _tokenIds.current();
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
@@ -160,7 +160,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
             tier[_tokenId] += 2;
             IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
-            tier[_tokenId]++;
+            tier[_tokenId]++;            
             IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
         emit Upgrade(_tokenId, tier[_tokenId]);
