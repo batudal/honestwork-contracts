@@ -7,27 +7,42 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./Registry/HWRegistry.sol";
 import "./utils/Base64.sol";
 
 contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     bytes32 public whitelistRoot;
+    address public metadataImplementation;
+    string public baseUri;
     uint256 public constant TOKEN_CAP = 1001;
     uint256 public tierOneFee = 100e18;
     uint256 public tierTwoFee = 250e18;
     uint256 public tierThreeFee = 300e18;
 
+    mapping(address => bool) public whitelistedTokens;
     mapping(address => bool) public whitelistCap;
     mapping(uint256 => uint256) public tier;
 
     event Upgrade(uint256 id, uint256 tier);
     event Mint(uint256 id, address user);
 
-    constructor() ERC721("HonestWork Genesis", "HonestWork Genesis") {}
+    constructor(
+        string memory _baseUri,
+        address[] memory _whitelistedTokens
+    ) ERC721("HonestWork Genesis", "HonestWork Genesis") {
+        baseUri = _baseUri;
+        for (uint256 i = 0; i < _whitelistedTokens.length; i++) {
+            whitelistedTokens[_whitelistedTokens[i]] = true;
+        }
+    }
 
     // restricted fxns
+
+    function whitelistToken(address _token) external onlyOwner {
+        whitelistedTokens[_token] = true;
+    }
+    
     function setWhitelistRoot(bytes32 _root) external onlyOwner {
         whitelistRoot = _root;
     }
@@ -53,14 +68,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
 
     function tokenURI(
         uint256 _tokenId
-    ) public pure override returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "https://api.honestwork.app/nft/",
-                    _toString(_tokenId)
-                )
-            );
+    ) public view override returns (string memory) {
+        return string(abi.encodePacked(baseUri, _toString(_tokenId)));
+
     }
 
     // internal fxns
@@ -109,7 +119,8 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
     // mutative fxns
 
     function publicMint(address _token) external returns (uint256) {
-        require(isAllowedAmount(_token, tierOneFee), "token not allowed");
+        require(whitelistedTokens[_token], "token not whitelisted");
+
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         uint256 newItemId = _tokenIds.current();
         require(newItemId < TOKEN_CAP, "all the nfts are claimed");
@@ -135,7 +146,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
         whitelistCap[msg.sender] = true;
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
-
         return newItemId;
     }
 
@@ -144,14 +154,13 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
         require(balanceOf(msg.sender) == 1);
         uint256 _tokenId = tokenOfOwnerByIndex(msg.sender, 0);
         require(tier[_tokenId] != 3);
+        require(whitelistedTokens[_token], "token not whitelisted");
         if (_levels == 2) {
             require(tier[_tokenId] == 1);
             tier[_tokenId] += 2;
-            require(isAllowedAmount(_token, tierTwoFee), "token not allowed");
             IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
-            tier[_tokenId]++;
-            require(isAllowedAmount(_token, tierOneFee), "token not allowed");
+            tier[_tokenId]++;            
             IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
         emit Upgrade(_tokenId, tier[_tokenId]);
