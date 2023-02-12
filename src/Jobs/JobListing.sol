@@ -15,8 +15,9 @@ import "../utils/IPool.sol";
 /// @dev It is open-ended contract used specifically for the job listing payments.
 /// @dev Imports are relative since abigen didn't want to work with my remappings. :P
 
+// todo: multiple tokens
 // polygon usdc 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-//pancake router 0x10ED43C718714eb63d5aA57B78B54704E256024E
+// pancake router 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
 contract JobListing is Ownable {
     struct Payment {
