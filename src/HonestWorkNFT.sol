@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/Base64.sol";
 
-contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
+contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     bytes32 public whitelistRoot;
@@ -42,7 +42,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
     function whitelistToken(address _token) external onlyOwner {
         whitelistedTokens[_token] = true;
     }
-    
+
     function setWhitelistRoot(bytes32 _root) external onlyOwner {
         whitelistRoot = _root;
     }
@@ -70,7 +70,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
         uint256 _tokenId
     ) public view override returns (string memory) {
         return string(abi.encodePacked(baseUri, _toString(_tokenId)));
-
     }
 
     // internal fxns
@@ -160,7 +159,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable, HWRegistry {
             tier[_tokenId] += 2;
             IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
-            tier[_tokenId]++;            
+            tier[_tokenId]++;
             IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
         emit Upgrade(_tokenId, tier[_tokenId]);
