@@ -1,20 +1,4 @@
-/**
- * @author -- Decoded Labs  .
- * @title -- HonestPay   .
- * @dev Contract is designed to smoothly serve the payment needs of creators and recruiters.
- */
-// #  888    888                                     888          8888888b.
-// #  888    888                                     888          888   Y88b
-// #  888    888                                     888          888    888
-// #  8888888888  .d88b.  88888b.   .d88b.  .d8888b  888888       888   d88P  8888b.  888  888
-// #  888    888 d88""88b 888 "88b d8P  Y8b 88K      888          8888888P"      "88b 888  888
-// #  888    888 888  888 888  888 88888888 "Y8888b. 888          888        .d888888 888  888
-// #  888    888 Y88..88P 888  888 Y8b.          X88 Y88b.        888        888  888 Y88b 888
-// #  888    888  "Y88P"  888  888  "Y8888   88888P'  "Y888       888        "Y888888  "Y88888
-// #                                                                                       888
-// #                                                                                  Y8b d88P
-// #                                                                                   "Y88P"
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -24,8 +8,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
-import "forge-std/console.sol";
-
 import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
@@ -65,7 +47,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     uint128 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
     bool public nativePaymentAllowed;
     uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
-
 
     mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
     mapping(uint256 => Deal) public dealsMapping; //mapping for keeping track of each offered deal. DealIds are unique.
@@ -222,9 +203,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             _paymentToken
         );
 
-        if(_downPayment != 0) {
-        unlockPayment(_dealId, _downPayment, 0, _recruiterNFTId);
-    }
+        if (_downPayment != 0) {
+            unlockPayment(_dealId, _downPayment, 0, _recruiterNFTId);
+        }
         return _dealId;
     }
 
@@ -234,6 +215,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @param   _paymentAmount amount to be unlocked .
      * @param   _rating upon intending to make a payment, recruiter rates the creator.
+     * @param   _recruiterNFT the recruiter can choose nft to increase it's gross revenue.
      */
     function unlockPayment(
         uint256 _dealId,
@@ -451,7 +433,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
 
         additionalPaymentLimit[_dealId] += 1;
         currentDeal.creatorRating.push(_rating * 100);
-        
+
         emit grossRevenueUpdate(_recruiterNFT, grossRev);
         emit additionalPaymentEvent(_dealId, currentDeal.recruiter, _payment);
     }
@@ -509,11 +491,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getclaimablePayment(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getclaimablePayment(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return dealsMapping[_dealId].claimablePayment;
     }
 
@@ -522,11 +502,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getJobCompletionRate(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getJobCompletionRate(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return ((dealsMapping[_dealId].paidAmount * 100) /
             dealsMapping[_dealId].totalPayment);
     }
@@ -545,11 +523,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getRecruiterRating(uint256 _dealId)
-        external
-        view
-        returns (uint128[] memory)
-    {
+    function getRecruiterRating(
+        uint256 _dealId
+    ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].recruiterRating);
     }
 
@@ -558,11 +534,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getCreatorRating(uint256 _dealId)
-        external
-        view
-        returns (uint128[] memory)
-    {
+    function getCreatorRating(
+        uint256 _dealId
+    ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].creatorRating);
     }
 
@@ -571,11 +545,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvgCreatorRating(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAvgCreatorRating(
+        uint256 _dealId
+    ) external view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -592,11 +564,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getAvgRecruiterRating(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAvgRecruiterRating(
+        uint256 _dealId
+    ) external view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -625,11 +595,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint256  .
      */
-    function getDealSuccessFee(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getDealSuccessFee(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return dealsMapping[_dealId].successFee;
     }
 
@@ -647,11 +615,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _dealId  .
      * @return  uint  .
      */
-    function getAdditionalPaymentLimit(uint256 _dealId)
-        external
-        view
-        returns (uint256)
-    {
+    function getAdditionalPaymentLimit(
+        uint256 _dealId
+    ) external view returns (uint256) {
         return additionalPaymentLimit[_dealId];
     }
 
@@ -660,11 +626,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @param   _address  .
      * @return  uint256[]  .
      */
-    function getDealsOfAnAddress(address _address)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function getDealsOfAnAddress(
+        address _address
+    ) public view returns (uint256[] memory) {
         uint256[] memory dealsOfAnAddress = new uint256[](dealIds.current());
         uint256 arrayLocation = 0;
         for (uint256 i = 0; i <= dealIds.current(); i++) {
@@ -705,10 +669,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
      * @dev     onlyOwner restriction.
      * @param   _dealId _feeCollector.
      */
-    function claimSuccessFee(uint256 _dealId, address _feeCollector)
-        external
-        onlyOwner
-    {
+    function claimSuccessFee(
+        uint256 _dealId,
+        address _feeCollector
+    ) external onlyOwner {
         uint256 successFee = dealsMapping[_dealId].successFee;
 
         if (dealsMapping[_dealId].paymentToken != address(0)) {
@@ -779,7 +743,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return router.quote(_amount, reserve1, reserve2);
     }
 
-    function getNFTGrossRevenue(uint256 _tokenId) public view returns(uint256) {
+    function getNFTGrossRevenue(
+        uint256 _tokenId
+    ) public view returns (uint256) {
         return registry.getNFTGrossRevenue(_tokenId);
     }
 }

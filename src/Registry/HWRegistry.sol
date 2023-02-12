@@ -4,7 +4,7 @@ pragma solidity 0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "../Payments/HonestPayLock.sol";
+import "../Payments/IHonestPayLock.sol";
 
 contract HWRegistry is Ownable {
     struct Whitelist {
@@ -12,10 +12,8 @@ contract HWRegistry is Ownable {
         uint256 maxAllowed;
     }
 
-
     Counters.Counter public counter;
-
-    HonestPayLock public honestPayLock;
+    IHonestPayLock public honestPayLock;
 
     mapping(uint256 => Whitelist) public whitelisted;
     mapping(uint256 => uint256) public nftGrossRevenue;
@@ -37,7 +35,9 @@ contract HWRegistry is Ownable {
         return true;
     }
 
-    function removeWhitelisted(address _address) external onlyOwner returns (bool) {
+    function removeWhitelisted(
+        address _address
+    ) external onlyOwner returns (bool) {
         uint256 _id = getWhitelistedID(_address);
         whitelisted[_id] = Whitelist({token: address(0), maxAllowed: 0});
         emit WhitelistedRemoved(_address);
@@ -48,7 +48,6 @@ contract HWRegistry is Ownable {
         address _address,
         uint256 _maxAllowed
     ) external onlyOwner returns (bool) {
-        
         whitelisted[getWhitelistedID(_address)].maxAllowed = _maxAllowed;
         emit WhitelistedUpdated(_address, _maxAllowed);
         return true;
@@ -77,7 +76,7 @@ contract HWRegistry is Ownable {
     function isAllowedAmount(
         address _address,
         uint256 _amount
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         bool isAllowedAmount_;
         for (uint256 i = 0; i < Counters.current(counter); i++) {
             if (whitelisted[i].token == _address) {
@@ -99,15 +98,17 @@ contract HWRegistry is Ownable {
         return whitelisted_;
     }
 
-    function setHonestPayLock(address _address) external onlyOwner returns (bool) {
-        honestPayLock = HonestPayLock(_address);
+    function setHonestPayLock(
+        address _address
+    ) external onlyOwner returns (bool) {
+        honestPayLock = IHonestPayLock(_address);
         return true;
     }
 
-    function setNFTGrossRevenue(uint256 _id, uint256 _amount)
-        external
-        onlyHonestPayLock
-    {
+    function setNFTGrossRevenue(
+        uint256 _id,
+        uint256 _amount
+    ) external onlyHonestPayLock {
         nftGrossRevenue[_id] += _amount;
     }
 
@@ -119,14 +120,7 @@ contract HWRegistry is Ownable {
         _;
     }
 
-
     function getNFTGrossRevenue(uint256 _id) external view returns (uint256) {
         return nftGrossRevenue[_id];
     }
-
-    
-
-
-
-
 }
