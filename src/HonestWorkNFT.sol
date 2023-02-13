@@ -9,6 +9,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/Base64.sol";
 
+/// @title HonestWork Genesis NFT
+/// @author @takez0_o
+/// @notice Genesis Membership NFT's to be used in the platform
+/// @notice Cap is initially set to 1001, but can be increased by the owner
+/// @dev NFT's are standalone, revenue is updated via off-chain metadata service
 contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
@@ -36,7 +41,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         }
     }
 
-    // restricted fxns
+    //-----------------//
+    //  admin methods  //
+    //-----------------//
 
     function setTiers(
         uint256 _tierOneFee,
@@ -77,19 +84,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         emit Mint(newTokenId, _to);
     }
 
-    function supportsInterface(
-        bytes4 _interfaceId
-    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(_interfaceId);
-    }
-
-    function tokenURI(
-        uint256 _tokenId
-    ) public view override returns (string memory) {
-        return string(abi.encodePacked(baseUri, _toString(_tokenId)));
-    }
-
-    // internal fxns
+    //--------------------//
+    //  internal methods  //
+    //--------------------//
 
     function _whitelistLeaf(address _address) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_address));
@@ -132,9 +129,11 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         return string(buffer);
     }
 
-    // mutative fxns
+    //--------------------//
+    //  mutative methods  //
+    //--------------------//
 
-    function publicMint(address _token) external returns (uint256) {
+    function publicMint(address _token) external {
         require(whitelistedTokens[_token], "token not whitelisted");
 
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
@@ -144,12 +143,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         tier[newItemId] = 1;
         _tokenIds.increment();
         emit Mint(newItemId, msg.sender);
-        return newItemId;
     }
 
-    function whitelistMint(
-        bytes32[] calldata _proof
-    ) external returns (uint256) {
+    function whitelistMint(bytes32[] calldata _proof) external {
         require(!whitelistCap[msg.sender], "whitelist cap reached");
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
@@ -162,7 +158,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         whitelistCap[msg.sender] = true;
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
-        return newItemId;
     }
 
     function upgradeToken(address _token, uint256 _levels) external {
@@ -182,6 +177,10 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         emit Upgrade(_tokenId, tier[_tokenId]);
     }
 
+    //----------------//
+    //  view methods  //
+    //----------------//
+
     function getTokenTier(uint256 _tokenId) external view returns (uint256) {
         return tier[_tokenId];
     }
@@ -192,5 +191,17 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         }
         uint256 _tokenId = tokenOfOwnerByIndex(_user, 0);
         return tier[_tokenId];
+    }
+
+    function supportsInterface(
+        bytes4 _interfaceId
+    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(_interfaceId);
+    }
+
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override returns (string memory) {
+        return string(abi.encodePacked(baseUri, _toString(_tokenId)));
     }
 }
