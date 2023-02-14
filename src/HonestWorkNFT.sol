@@ -13,9 +13,8 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIds;
     bytes32 public whitelistRoot;
-    address public metadataImplementation;
     string public baseUri;
-    uint256 public constant TOKEN_CAP = 1001;
+    uint256 public tokenCap = 1001;
     uint256 public tierOneFee = 100e18;
     uint256 public tierTwoFee = 250e18;
     uint256 public tierThreeFee = 300e18;
@@ -39,6 +38,24 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
 
     // restricted fxns
 
+    function setTiers(
+        uint256 _tierOneFee,
+        uint256 _tierTwoFee,
+        uint256 _tierThreeFee
+    ) external onlyOwner {
+        tierOneFee = _tierOneFee;
+        tierTwoFee = _tierTwoFee;
+        tierThreeFee = _tierThreeFee;
+    }
+
+    function setBaseUri(string memory _baseUri) external onlyOwner {
+        baseUri = _baseUri;
+    }
+
+    function setTokenCap(uint256 _tokenCap) external onlyOwner {
+        tokenCap = _tokenCap;
+    }
+
     function whitelistToken(address _token) external onlyOwner {
         whitelistedTokens[_token] = true;
     }
@@ -52,7 +69,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function adminMint(address _to, uint256 _tier) external onlyOwner {
-        require(_tokenIds.current() < TOKEN_CAP, "Token cap reached");
+        require(_tokenIds.current() < tokenCap, "Token cap reached");
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
         _mint(_to, newTokenId);
@@ -122,7 +139,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
 
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         uint256 newItemId = _tokenIds.current();
-        require(newItemId < TOKEN_CAP, "all the nfts are claimed");
+        require(newItemId < tokenCap, "all the nfts are claimed");
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
         _tokenIds.increment();
@@ -136,7 +153,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         require(!whitelistCap[msg.sender], "whitelist cap reached");
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        require(newItemId < TOKEN_CAP, "all the nfts are claimed");
+        require(newItemId < tokenCap, "all the nfts are claimed");
         require(
             _verify(_whitelistLeaf(msg.sender), whitelistRoot, _proof),
             "Invalid merkle proof"
@@ -163,5 +180,17 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
             IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
         emit Upgrade(_tokenId, tier[_tokenId]);
+    }
+
+    function getTokenTier(uint256 _tokenId) external view returns (uint256) {
+        return tier[_tokenId];
+    }
+
+    function getUserTier(address _user) external view returns (uint256) {
+        if (balanceOf(_user) == 0) {
+            return 0;
+        }
+        uint256 _tokenId = tokenOfOwnerByIndex(_user, 0);
+        return tier[_tokenId];
     }
 }
