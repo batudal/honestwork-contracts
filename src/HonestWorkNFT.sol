@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/Base64.sol";
 
 /// @title HonestWork Genesis NFT
-/// @author @takez0_o
+/// @author @takez0_o, @ReddKidd
 /// @notice Genesis Membership NFT's to be used in the platform
 /// @notice Cap is initially set to 1001, but can be increased by the owner
 /// @dev NFT's are standalone, revenue is updated via off-chain metadata service
@@ -135,13 +135,12 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
 
     function publicMint(address _token) external {
         require(whitelistedTokens[_token], "token not whitelisted");
-
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
+        _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         require(newItemId < tokenCap, "all the nfts are claimed");
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
-        _tokenIds.increment();
         emit Mint(newItemId, msg.sender);
     }
 
@@ -161,18 +160,22 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function upgradeToken(address _token, uint256 _levels) external {
-        require(_levels == 1 || _levels == 2);
+        require(_levels > 0 && _levels < 3);
         require(balanceOf(msg.sender) == 1);
         uint256 _tokenId = tokenOfOwnerByIndex(msg.sender, 0);
-        require(tier[_tokenId] != 3);
+        require(tier[_tokenId] < 3);
         require(whitelistedTokens[_token], "token not whitelisted");
         if (_levels == 2) {
             require(tier[_tokenId] == 1);
+            IERC20(_token).transferFrom(msg.sender, address(this), tierThreeFee - tierOneFee);
             tier[_tokenId] += 2;
-            IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee);
         } else {
+            if (tier[_tokenId] == 1) {
+              IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee - tierOneFee);
+            } else {
+              IERC20(_token).transferFrom(msg.sender, address(this), tierThreeFee - tierTwoFee);
+            }
             tier[_tokenId]++;
-            IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         }
         emit Upgrade(_tokenId, tier[_tokenId]);
     }
