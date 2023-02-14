@@ -28,7 +28,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     mapping(address => bool) public whitelistCap;
     mapping(uint256 => uint256) public tier;
     
-    bool public isMintingPaused = false;
+    bool public isPaused = false;
 
     event Upgrade(uint256 id, uint256 tier);
     event Mint(uint256 id, address user);
@@ -36,7 +36,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     constructor(
         string memory _baseUri,
         address[] memory _whitelistedTokens
-    ) ERC721("HonestWork Genesis", "HonestWork Genesis") {
+    ) ERC721("HonestWork Genesis", "HWG") {
         baseUri = _baseUri;
         for (uint256 i = 0; i < _whitelistedTokens.length; i++) {
             whitelistedTokens[_whitelistedTokens[i]] = true;
@@ -77,12 +77,16 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         IERC20(_token).transfer(msg.sender, _amount);
     }
 
-    function pauseMinting() external onlyOwner {
-        isMintingPaused = true;
+    function pause() external onlyOwner {
+        isPaused = true;
     }
 
-    function unpauseMinting() external onlyOwner {
-        isMintingPaused = false;
+    function unpause() external onlyOwner {
+        isPaused = false;
+    }
+
+    function removeWhitelistToken(address _token) external onlyOwner {
+        whitelistedTokens[_token] = false;
     }
     
 
@@ -117,7 +121,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         uint256 _tokenId,
         uint256 _batchSize
     ) internal whenNotPaused override(ERC721, ERC721Enumerable) {
+        if(_to != owner()) {
         require(balanceOf(_to) == 0, "only one nft at a time");
+        }
         super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
     }
 
@@ -223,9 +229,11 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         return whitelistedTokens[_token];
     }
 
-    //modifier
+    //----------------//
+    //   modifiers    //
+    //----------------//
     modifier whenNotPaused() {
-        require(!isMintingPaused, "Minting is paused");
+        require(!isPaused, "Contract is paused");
         _;
     }
 }
