@@ -19,43 +19,54 @@ contract HonestWorkNFTTest is Test {
     SigUtils public sigUtils;
     MockToken public token;
     MockToken public token2;
+    MockToken public token3;
     HonestPayLock public hplock;
     HonestWorkNFT public honestWorkNFT;
     HWRegistry public registry;
 
     function setUp() public {
 
+        recruiter1 = vm.addr(1);
+        recruiter2 = vm.addr(2);
+        creator1 = vm.addr(3);
+        creator2 = vm.addr(4);
+        vm.deal(recruiter1, 500 ether);
+        vm.deal(recruiter2, 500 ether);
+        vm.deal(creator1, 100 ether);
+        vm.deal(creator2, 100 ether);
+
+
+        token = new MockToken("MCK", "MOCK");
+        token2 = new MockToken("MCK", "MOCK");
+        token3 = new MockToken("MCK", "MOCK");
+        
+        vm.prank(deployer);
+        token.transfer(address(recruiter1), 500 ether);
+        token.transfer(address(creator1), 500 ether);
+        vm.prank(deployer);
+        token2.transfer(address(recruiter1), 500 ether);
+        token2.transfer(address(creator1), 500 ether);
+        vm.prank(deployer);
+        token3.transfer(address(recruiter1), 500 ether);
+        token3.transfer(address(creator1), 500 ether);
+
 
         registry = new HWRegistry();
-        honestWorkNFT = new HonestWorkNFT(address(registry));
+        address[] memory tokens = new address[](3);
+        tokens[0] = address(token);
+        tokens[1] = address(token2);
+        tokens[2] = address(0);
+
+        honestWorkNFT = new HonestWorkNFT("matrix", tokens);
         hplock = new HonestPayLock(
             address(registry),
             address(honestWorkNFT)
         );
         sigUtils = new SigUtils();
 
-        token = new MockToken("MCK", "MOCK");
-        token2 = new MockToken("MCK", "MOCK");
 
 
-        vm.prank(deployer);
-        honestWorkNFT.setHonestPayLock(address(hplock));
-        vm.prank(deployer);
-        registry.addWhitelisted(address(0), 1000 ether);
-        vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
-        vm.prank(deployer);
-        registry.addWhitelisted(address(token2), 1000 ether);
 
-        recruiter1 = vm.addr(1);
-        recruiter2 = vm.addr(2);
-        creator1 = vm.addr(3);
-        creator2 = vm.addr(4);
-        vm.deal(recruiter1, 100 ether);
-        vm.deal(recruiter2, 100 ether);
-        vm.deal(creator1, 100 ether);
-        vm.deal(creator2, 100 ether);
-        vm.prank(recruiter1);
 
         //console.log(x);
     }
@@ -77,6 +88,71 @@ contract HonestWorkNFTTest is Test {
         );
         assertEq(honestWorkNFT.balanceOf(address(deployer)), 1);
     }
+
+    function testPublicMint() public {
+        vm.prank(recruiter1);
+        token.approve(address(honestWorkNFT), 150 ether);
+        vm.prank(recruiter1);
+        honestWorkNFT.publicMint(
+            address(token)
+        );
+        assertEq(honestWorkNFT.balanceOf(address(recruiter1)), 1);
+        
+        
+        vm.prank(recruiter1);
+        token.approve(address(honestWorkNFT), 150 ether);
+        vm.expectRevert();
+        vm.prank(recruiter1);
+        honestWorkNFT.publicMint(
+            address(token)
+        );
+        assertEq(honestWorkNFT.balanceOf(address(recruiter1)), 1);
+
+        vm.prank(creator1);
+        token.approve(address(honestWorkNFT), 150 ether);
+        vm.prank(creator1);
+        honestWorkNFT.publicMint(
+            address(token)
+        );
+        assertEq(honestWorkNFT.balanceOf(address(creator1)), 1);
+        assertEq(honestWorkNFT.tokenOfOwnerByIndex(address(creator1), 0), 2);
+        
+    }
+
+    function testTierFeeChange(uint256 _tierOneFee, uint256 _tierTwoFee, uint256 _tierThreeFee) public {
+        honestWorkNFT.setTiers(_tierOneFee, _tierTwoFee, _tierThreeFee);
+        assertEq(honestWorkNFT.tierOneFee(), _tierOneFee);
+        assertEq(honestWorkNFT.tierTwoFee(), _tierTwoFee);
+        assertEq(honestWorkNFT.tierThreeFee(), _tierThreeFee);
+
+    }
+
+    function testWhitelistToken(address _token) public {
+        honestWorkNFT.whitelistToken(_token);
+        assertEq(honestWorkNFT.getWhitelistToken(_token), true);
+    }
+
+    function testPauseMinting() public {
+        honestWorkNFT.pauseMinting();
+        assertEq(honestWorkNFT.isMintingPaused(), true);
+
+        vm.prank(recruiter1);
+        token.approve(address(honestWorkNFT), 150 ether);
+        vm.expectRevert();
+        vm.prank(recruiter1);
+        honestWorkNFT.publicMint(
+            address(token)
+        );
+    }
+
+    function testAddWhitelistTokenFuzz(MockToken _token) public {
+        vm.assume(address(_token) != address(0));
+        vm.prank(deployer);
+        _token.transfer(address(recruiter1), 500 ether);
+ 
+    }
+    
+
 }
 
 // address recipient,

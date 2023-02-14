@@ -116,7 +116,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         address _to,
         uint256 _tokenId,
         uint256 _batchSize
-    ) internal override(ERC721, ERC721Enumerable) {
+    ) internal whenNotPaused override(ERC721, ERC721Enumerable) {
         require(balanceOf(_to) == 0, "only one nft at a time");
         super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
     }
@@ -217,6 +217,10 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         uint256 _tokenId
     ) public view override returns (string memory) {
         return string(abi.encodePacked(baseUri, _toString(_tokenId)));
+    }
+
+    function getWhitelistToken(address _token) external view returns (bool) {
+        return whitelistedTokens[_token];
     }
 
     //modifier
