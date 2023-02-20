@@ -9,13 +9,11 @@ import "../src//Jobs/JobListing.sol";
 import "../src//mock/MockToken.sol";
 
 contract JobListingTest is Test {
-
-        struct Payment {
+    struct Payment {
         address token; // 0x0 for ETH
         uint256 amount;
         uint256 listingDate;
     }
-
 
     uint256 bscFork;
 
@@ -38,7 +36,6 @@ contract JobListingTest is Test {
         token = new MockToken("MCK", "MOCK");
         token2 = new MockToken("MCK", "MOCK");
         token3 = new MockToken("MCK", "MOCK");
-        
 
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
@@ -57,12 +54,10 @@ contract JobListingTest is Test {
     }
 
     function testSetup() public {
-        assertEq(token.balanceOf(address(deployer)),49999 ether);
+        assertEq(token.balanceOf(address(deployer)), 49999 ether);
         assertEq(registry.isWhitelisted(address(token)), false);
-        assertEq(token.balanceOf(address(recruiter1)),1e18);
-
+        assertEq(token.balanceOf(address(recruiter1)), 1e18);
     }
-
 
     function testAddWhitelist() public {
         vm.prank(deployer);
@@ -73,14 +68,22 @@ contract JobListingTest is Test {
         vm.prank(recruiter1);
         jobListing.payForListing(address(token), 1 ether);
 
-        assertEq(token.balanceOf(address(recruiter1)),0 ether);
-        assertEq(token.balanceOf(address(jobListing)),1 ether);
-        assertEq(token.balanceOf(address(deployer)),49999 ether);
-        assertEq(token.balanceOf(address(registry)),0 ether);
-        assertEq(jobListing.getLatestPayment(address(recruiter1)).amount,1 ether);
-        assertEq(jobListing.getLatestPayment(address(recruiter1)).token,address(token));
-        assertEq(jobListing.getLatestPayment(address(recruiter1)).listingDate,block.timestamp);
-    
+        assertEq(token.balanceOf(address(recruiter1)), 0 ether);
+        assertEq(token.balanceOf(address(jobListing)), 1 ether);
+        assertEq(token.balanceOf(address(deployer)), 49999 ether);
+        assertEq(token.balanceOf(address(registry)), 0 ether);
+        assertEq(
+            jobListing.getLatestPayment(address(recruiter1)).amount,
+            1 ether
+        );
+        assertEq(
+            jobListing.getLatestPayment(address(recruiter1)).token,
+            address(token)
+        );
+        assertEq(
+            jobListing.getLatestPayment(address(recruiter1)).listingDate,
+            block.timestamp
+        );
     }
 
     function testPayForListingEth() public {
@@ -94,12 +97,11 @@ contract JobListingTest is Test {
         assert(jobListing.getBusdBalance() > 200 ether);
         //console.log(jobListing.getBusdBalance());
         vm.prank(deployer);
-        jobListing.withdrawAllEarnings(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        jobListing.withdrawAllEarnings(
+            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
+        );
         assertEq(token.balanceOf(address(jobListing)), 0 ether);
-
-    
     }
-
 
     function testWithdrawAll() public {
         vm.prank(deployer);
@@ -129,11 +131,9 @@ contract JobListingTest is Test {
         vm.prank(creator2);
         jobListing.payForListing(address(token3), 1 ether);
 
-
         assertEq(token.balanceOf(address(jobListing)), 1 ether);
         assertEq(token2.balanceOf(address(jobListing)), 1 ether);
         assertEq(token3.balanceOf(address(jobListing)), 1 ether);
-
 
         vm.prank(deployer);
         jobListing.withdrawAllTokens();
@@ -142,10 +142,8 @@ contract JobListingTest is Test {
         assertEq(token3.balanceOf(address(jobListing)), 0 ether);
     }
 
-
-    function testGetBnbPrice() public {
+    function testgetEthPrice() public {
         vm.prank(deployer);
-        assert(jobListing.getBnbPrice(1 ether) > 250 ether);
+        assert(jobListing.getEthPrice(1 ether) > 250 ether);
     }
-
 }

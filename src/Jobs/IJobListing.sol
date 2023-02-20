@@ -31,7 +31,7 @@ interface IJobListing {
 
     function withdrawAllTokens() external;
 
-    function getBnbPrice(uint256 _amount) external view returns (uint);
+    function getEthPrice(uint256 _amount) external view returns (uint);
 
     function updateRegistry(address _registry) external;
 

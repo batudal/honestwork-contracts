@@ -167,7 +167,7 @@ contract JobListing is Ownable {
      * @dev     uses the router to get the price.
      * @param   _amount.
      */
-    function getBnbPrice(uint256 _amount) external view returns (uint) {
+    function getEthPrice(uint256 _amount) external view returns (uint) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();

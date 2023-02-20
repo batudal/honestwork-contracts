@@ -174,6 +174,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         whitelistCap[msg.sender] = true;
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;
+        emit Mint(newItemId, msg.sender);
     }
 
     function upgradeToken(address _token, uint256 _levels) external {
@@ -232,6 +233,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     //----------------//
     //   modifiers    //
     //----------------//
+ 
     modifier whenNotPaused() {
         require(!isPaused, "Contract is paused");
         _;
