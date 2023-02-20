@@ -94,8 +94,8 @@ contract JobListingTest is Test {
         assertEq(registry.isWhitelisted(address(0)), true);
         vm.prank(recruiter1);
         jobListing.payForListingEth{value: 1 ether}(200 ether, 100);
-        assert(jobListing.getBusdBalance() > 200 ether);
-        //console.log(jobListing.getBusdBalance());
+        assert(jobListing.getTokenBalance() > 200 ether);
+        //console.log(jobListing.getTokenBalance());
         vm.prank(deployer);
         jobListing.withdrawAllEarnings(
             0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56

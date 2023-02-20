@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
 import "../Registry/IHWRegistry.sol";
@@ -13,6 +12,11 @@ import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 import "../utils/SigUtils.sol";
 
+// todo: rename contract to HWEscrow
+/// @title HonestWork Escrow Contract
+/// @author @takez0_o, @ReddKidd
+/// @notice Escrow contract for HonestWork
+/// @dev Facilitates deals between creators and recruiters
 contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     using Counters for Counters.Counter;
 
@@ -38,8 +42,10 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
 
+    // todo: move router,busd,pool to constructor and add a setter function
     IUniswapV2Router01 public router =
         IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    // todo: don't use chain specific name
     IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
     IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16);
     uint64 public extraPaymentLimit;

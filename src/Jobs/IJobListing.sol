@@ -8,7 +8,7 @@ interface IJobListing {
         uint256 listingDate;
     }
 
-    function getPaymentsOf(
+    function getPayments(
         address _user
     ) external view returns (Payment[] memory);
 
@@ -35,5 +35,5 @@ interface IJobListing {
 
     function updateRegistry(address _registry) external;
 
-    function getBusdBalance() external view returns (uint);
+    function getTokenBalance() external view returns (uint);
 }
