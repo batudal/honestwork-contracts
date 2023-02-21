@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "../Registry/IHWRegistry.sol";
 import "../HonestWorkNFT.sol";
 import "../Registry/IHWRegistry.sol";
@@ -13,81 +12,123 @@ import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 import "../utils/SigUtils.sol";
 
+// todo: rename contract to HWEscrow
+/// @title HonestWork Escrow Contract
+/// @author @takez0_o, @ReddKidd
+/// @notice Escrow contract for HonestWork
+/// @dev Facilitates deals between creators and recruiters
 contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
-    //@notice enum to keep track of the state of the deal
+    using Counters for Counters.Counter;
+
     enum Status {
         OfferInitiated,
         JobCompleted,
         JobCancelled
     }
-
-    //@dev core of the contract, the deal struct reflects the terms of the agreement
-    //@params required notation is written next to the vars
     struct Deal {
-        address recruiter; //address of the recruiter
-        address creator; //address of the creator-freelancer
-        address paymentToken; //address of the payment token
-        uint256 totalPayment; //total payment amount denoted in the form of the payment token
-        uint256 successFee; //a variable to keep track of honestWork success fee
-        uint256 paidAmount; //a variable to keep track of the payments made
-        uint256 claimablePayment; // a variable to keep track of the unlocked payment which can be claimed by the creator
-        Status status; // deal Status
-        uint128[] recruiterRating; // recruiter's rating array
-        uint128[] creatorRating; // creator's rating array
+        address recruiter;
+        address creator;
+        address paymentToken;
+        uint256 totalPayment;
+        uint256 successFee;
+        uint256 paidAmount;
+        uint256 claimableAmount;
+        Status status;
+        uint128[] recruiterRating;
+        uint128[] creatorRating;
     }
-    IHWRegistry public registry; //registry contract definition for retreiving the whitelisted payment mediums
-    HonestWorkNFT public hw721; //nft contract definition for recording grossRevenues to the nft.
 
-    IUniswapV2Router01 public router =
-        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E); //pancake router
-    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56); // busd
-    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16); // busd-bnb pool
-
-    uint64 public extraPaymentLimit; //limit for additional payments--currently capped to 3
-    uint128 public honestWorkSuccessFee; //honestWork's cut from the deals, currently set to %5
-    bool public nativePaymentAllowed;
-    uint256 public totalCollectedSuccessFee; //total amount of success fee collected by honestWork
-
-    mapping(uint256 => uint256) public additionalPaymentLimit; //keeps track of the additional payments made for each deal
-    mapping(uint256 => Deal) public dealsMapping; //mapping for keeping track of each offered deal. DealIds are unique.
-
-    event OfferCreatedEvent(
-        address indexed _recruiter,
-        address indexed _creator,
-        uint256 indexed _totalPayment,
-        address _paymentToken
-    );
-    event paymentUnlockedEvent(
-        uint256 _dealId,
-        address indexed _recruiter,
-        uint256 indexed _unlockedAmount
-    );
-    event claimPaymentEvent(
-        uint256 indexed _dealId,
-        address indexed _creator,
-        uint256 indexed _paymentReceived
-    );
-    event additionalPaymentEvent(
-        uint256 indexed _dealId,
-        address indexed _recruiter,
-        uint256 indexed _payment
-    );
-    event withdrawPaymentEvent(uint256 indexed _dealId, Status status);
-    event successFeeChangedEvent(uint256 _newSuccessFee);
-    event claimSuccessFeeEvent(uint256 indexed _dealId, uint256 _amount);
-    event changeExtraPaymentLimitEvent(uint256 _newPaymentLimit);
-    event claimSuccessFeeAllEvent(address _collector);
-    event grossRevenueUpdate(uint256 indexed _tokenId, uint256 _grossRevenue);
-
-    //Using a counter to count the dealIds, keeping them unique
-    using Counters for Counters.Counter;
     Counters.Counter public dealIds;
+    IHWRegistry public registry;
+    HonestWorkNFT public hw721;
+
+    // todo: move router,busd,pool to constructor and add a setter function
+    IUniswapV2Router01 public router =
+        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    // todo: don't use chain specific name
+    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16);
+    uint64 public extraPaymentLimit;
+    uint128 public honestWorkSuccessFee;
+    bool public nativePaymentAllowed;
+    uint256 public totalCollectedSuccessFee;
+
+    mapping(uint256 => uint256) public additionalPaymentLimit;
+    mapping(uint256 => Deal) public dealsMapping;
 
     constructor(address _registry, address _HW721) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
         hw721 = HonestWorkNFT(_HW721);
     }
+
+    //-----------------//
+    //  admin methods  //
+    //-----------------//
+
+    /**
+     * @dev value is expressed as a percentage.
+     */
+    function changeSuccessFee(uint128 _fee) external onlyOwner {
+        honestWorkSuccessFee = _fee;
+        emit FeeChanged(_fee);
+    }
+
+    function changeRegistry(IHWRegistry _registry) external onlyOwner {
+        registry = _registry;
+    }
+
+    function claimSuccessFee(
+        uint256 _dealId,
+        address _feeCollector
+    ) external onlyOwner {
+        uint256 successFee = dealsMapping[_dealId].successFee;
+
+        if (dealsMapping[_dealId].paymentToken != address(0)) {
+            IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
+            paymentToken.transfer(_feeCollector, successFee);
+        } else {
+            (bool payment, ) = payable(_feeCollector).call{value: successFee}(
+                ""
+            );
+            require(payment, "payment failed");
+        }
+        totalCollectedSuccessFee += successFee;
+        dealsMapping[_dealId].successFee = 0;
+        emit FeeClaimed(_dealId, dealsMapping[_dealId].successFee);
+    }
+
+    function claimTotalSuccessFee(address _feeCollector) external onlyOwner {
+        for (uint256 i = 1; i <= dealIds.current(); i++) {
+            uint256 successFee = dealsMapping[i].successFee;
+            if (successFee > 0) {
+                if (dealsMapping[i].paymentToken == address(0)) {
+                    (bool payment, ) = payable(_feeCollector).call{
+                        value: successFee
+                    }("");
+                    require(payment, "payment failed");
+                } else {
+                    IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
+                    paymentToken.transfer(_feeCollector, successFee);
+                }
+                dealsMapping[i].successFee = 0;
+            }
+        }
+        emit TotalFeeClaimed(_feeCollector);
+    }
+
+    function changeExtraPaymentLimit(uint64 _limit) external onlyOwner {
+        extraPaymentLimit = _limit;
+        emit ExtraLimitChanged(_limit);
+    }
+
+    function allowNativePayment(bool _bool) external onlyOwner {
+        nativePaymentAllowed = _bool;
+    }
+
+    //--------------------//
+    //  mutative methods  //
+    //--------------------//
 
     function createDealSignature(
         address _recruiter,
@@ -113,17 +154,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             );
     }
 
-    /**
-     * @notice function to create deals  .
-     * @dev function fills in the deal Struct with the terms of the deal. 
-        The agreed amount is deposited into the contract upon calling this function.
-        if the recruiter is calling the function, the signature of the creator must be given as a parameter.
-     * @param   _recruiter.
-     * @param   _creator.
-     * @param   _paymentToken function checks if the paymentToken is whitelisted.
-     * @param   _totalPayment.
-        * @param   _downPayment.
-     */
     function createDeal(
         address _recruiter,
         address _creator,
@@ -196,12 +226,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 (_totalPayment)
             );
         }
-        emit OfferCreatedEvent(
-            _recruiter,
-            _creator,
-            _totalPayment,
-            _paymentToken
-        );
+        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken);
 
         if (_downPayment != 0) {
             unlockPayment(_dealId, _downPayment, 0, _recruiterNFTId);
@@ -209,14 +234,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return _dealId;
     }
 
-    /**
-     * @notice  function to unlock payments which allow the creator to claim.
-     * @dev     function can be called by the recruiter of the _dealId parameter.
-     * @param   _dealId  .
-     * @param   _paymentAmount amount to be unlocked .
-     * @param   _rating upon intending to make a payment, recruiter rates the creator.
-     * @param   _recruiterNFT the recruiter can choose nft to increase it's gross revenue.
-     */
     function unlockPayment(
         uint256 _dealId,
         uint256 _paymentAmount,
@@ -237,12 +254,12 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             "only recruiter can unlock payments"
         );
 
-        currentDeal.claimablePayment += _paymentAmount;
+        currentDeal.claimableAmount += _paymentAmount;
         address _paymentToken = currentDeal.paymentToken;
 
         require(
             currentDeal.totalPayment >=
-                currentDeal.claimablePayment + currentDeal.paidAmount,
+                currentDeal.claimableAmount + currentDeal.paidAmount,
             "can not go above total payment, use additional payment function pls"
         );
         if (_rating != 0) {
@@ -251,27 +268,16 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
 
         uint256 grossRev = (
             _paymentToken == address(0)
-                ? getBnbPrice(_paymentAmount)
+                ? getEthPrice(_paymentAmount)
                 : _paymentAmount
         );
 
         registry.setNFTGrossRevenue(_recruiterNFT, grossRev);
 
-        emit grossRevenueUpdate(_recruiterNFT, grossRev);
-        emit paymentUnlockedEvent(
-            _dealId,
-            currentDeal.recruiter,
-            _paymentAmount
-        );
+        emit GrossRevenueUpdated(_recruiterNFT, grossRev);
+        emit PaymentUnlocked(_dealId, currentDeal.recruiter, _paymentAmount);
     }
 
-    /**
-     * @notice function cancels the deal.
-     * @dev    function is to be called by the recruiter of the _dealId specified
-        Upon calling, the recruiter shows intent to cancel the deal. Function sends the remaining
-        token amount to the recruiter. 
-     * @param   _dealId  .
-     */
     function withdrawPayment(uint256 _dealId) external {
         Deal storage currentDeal = dealsMapping[_dealId];
         require(
@@ -296,18 +302,9 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         }
 
         currentDeal.status = Status.JobCancelled;
-        emit withdrawPaymentEvent(_dealId, currentDeal.status);
+        emit PaymentWithdrawn(_dealId, currentDeal.status);
     }
 
-    /**
-     * @notice  function to claim the Payment.
-     * @dev     function can be called by the creator of the _dealId.
-        if recruiter has intenteded to make any payment, creator claims it with this function
-     * @param   _dealId  .
-     * @param   _withdrawAmount  .
-     * @param   _rating  cretor rates the recruiter upon claiming.
-     * @param   _creatorNFT  tokenId of creatorNFT to record grossRev.
-     */
     function claimPayment(
         uint256 _dealId,
         uint256 _withdrawAmount,
@@ -329,7 +326,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             "only creator can receive payments"
         );
         require(
-            currentDeal.claimablePayment >= _withdrawAmount,
+            currentDeal.claimableAmount >= _withdrawAmount,
             "desired payment is not available yet"
         );
         require(
@@ -338,7 +335,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         );
         address _paymentToken = currentDeal.paymentToken;
         currentDeal.paidAmount += _withdrawAmount;
-        currentDeal.claimablePayment -= _withdrawAmount;
+        currentDeal.claimableAmount -= _withdrawAmount;
         currentDeal.recruiterRating.push(_rating * 100);
         currentDeal.successFee +=
             (_withdrawAmount * honestWorkSuccessFee) /
@@ -358,25 +355,19 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         }
         uint256 grossRev = (
             _paymentToken == address(0)
-                ? getBnbPrice(_withdrawAmount)
+                ? getEthPrice(_withdrawAmount)
                 : _withdrawAmount
         );
         registry.setNFTGrossRevenue(_creatorNFT, grossRev);
         if (currentDeal.paidAmount >= currentDeal.totalPayment) {
             currentDeal.status = Status.JobCompleted;
         }
-        emit grossRevenueUpdate(_creatorNFT, grossRev);
-        emit claimPaymentEvent(_dealId, currentDeal.creator, _withdrawAmount);
+        emit GrossRevenueUpdated(_creatorNFT, grossRev);
+        emit PaymentClaimed(_dealId, currentDeal.creator, _withdrawAmount);
     }
 
     /**
-     * @notice  function to make additional payments which are not intended when creating the deal.
-     * @dev     function is to be called by the recruiter of the _dealId, function increases total payment
-        and available payment paramters. The intented amount is immediately unlocked for the creator to claim.
-     * @param   _dealId  .
-     * @param   _payment  .
-     * @param   _recruiterNFT  .
-     * @param   _rating  .
+     * @dev recruiter immediately unlocks an additional amount for the creator to claim
      */
     function additionalPayment(
         uint256 _dealId,
@@ -417,134 +408,80 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 msg.value >= _payment,
                 "recruiter should deposit the additional payment"
             );
-            currentDeal.claimablePayment += _payment;
+            currentDeal.claimableAmount += _payment;
             currentDeal.totalPayment += _payment;
         } else {
             IERC20 paymentToken = IERC20(_paymentToken);
             paymentToken.transferFrom(msg.sender, address(this), _payment);
-            currentDeal.claimablePayment += _payment;
+            currentDeal.claimableAmount += _payment;
             currentDeal.totalPayment += _payment;
         }
 
         uint256 grossRev = (
-            _paymentToken == address(0) ? getBnbPrice(_payment) : _payment
+            _paymentToken == address(0) ? getEthPrice(_payment) : _payment
         );
         registry.setNFTGrossRevenue(_recruiterNFT, grossRev);
 
         additionalPaymentLimit[_dealId] += 1;
         currentDeal.creatorRating.push(_rating * 100);
 
-        emit grossRevenueUpdate(_recruiterNFT, grossRev);
-        emit additionalPaymentEvent(_dealId, currentDeal.recruiter, _payment);
+        emit GrossRevenueUpdated(_recruiterNFT, grossRev);
+        emit AdditionalPayment(_dealId, currentDeal.recruiter, _payment);
     }
 
-    //Getters
+    //----------------//
+    //  view methods  //
+    //----------------//
 
-    /**
-     * @notice  function to the requested deal struct.
-     * @param   _dealId  .
-     * @return  Deal  .
-     */
     function getDeal(uint256 _dealId) external view returns (Deal memory) {
         return dealsMapping[_dealId];
     }
 
-    /**
-     * @notice  function to return the creator address of a specified deal.
-     * @param   _dealId  .
-     * @return  address  .
-     */
     function getCreator(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].creator;
     }
 
-    /**
-     * @notice  function to return the recruiter address of a specfied deal.
-     * @param   _dealId  .
-     * @return  address  .
-     */
     function getRecruiter(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].recruiter;
     }
 
-    /**
-     * @notice  function to return the payment token of a specified deal.
-     * @dev     returns address(0) if payment method is native currency of the network.
-     * @param   _dealId  .
-     * @return  address  .
-     */
     function getPaymentToken(uint256 _dealId) external view returns (address) {
         return dealsMapping[_dealId].paymentToken;
     }
 
-    /**
-     * @notice  function to return the paidAmount by the recruiter.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getPaidAmount(uint256 _dealId) external view returns (uint256) {
         return dealsMapping[_dealId].paidAmount;
     }
 
-    /**
-     * @notice  function to return the available amount which is claimable by the creator.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
-    function getclaimablePayment(
+    function getClaimableAmount(
         uint256 _dealId
     ) external view returns (uint256) {
-        return dealsMapping[_dealId].claimablePayment;
+        return dealsMapping[_dealId].claimableAmount;
     }
 
-    /**
-     * @notice  function returns the completion rate of a deal accounted by the paidAmount/TotalPayment.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
-    function getJobCompletionRate(
+    function getDealCompletionRate(
         uint256 _dealId
     ) external view returns (uint256) {
         return ((dealsMapping[_dealId].paidAmount * 100) /
             dealsMapping[_dealId].totalPayment);
     }
 
-    /**
-     * @notice  function to return the total payment of a specified deal.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getTotalPayment(uint256 _dealId) external view returns (uint256) {
         return (dealsMapping[_dealId].totalPayment);
     }
 
-    /**
-     * @notice  function to return the recruiter's rating array.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getRecruiterRating(
         uint256 _dealId
     ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].recruiterRating);
     }
 
-    /**
-     * @notice  function to return the creator's rating array.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getCreatorRating(
         uint256 _dealId
     ) external view returns (uint128[] memory) {
         return (dealsMapping[_dealId].creatorRating);
     }
 
-    /**
-     * @notice  function to return the creator's average rating.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getAvgCreatorRating(
         uint256 _dealId
     ) external view returns (uint256) {
@@ -559,11 +496,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return (sum / dealsMapping[_dealId].creatorRating.length);
     }
 
-    /**
-     * @notice  function to return the recruiter's average rating.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getAvgRecruiterRating(
         uint256 _dealId
     ) external view returns (uint256) {
@@ -578,10 +510,6 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return (sum / dealsMapping[_dealId].recruiterRating.length);
     }
 
-    /**
-     * @notice  function to return the totalSuccessFee claimable or claimed by HW.
-     * @return  uint256.
-     */
     function getTotalSuccessFee() external view returns (uint256) {
         uint256 totalSuccessFee;
         for (uint256 i = 1; i <= dealIds.current(); i++) {
@@ -590,43 +518,23 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return totalSuccessFee;
     }
 
-    /**
-     * @notice  function to return the success fee of a specified deal.
-     * @param   _dealId  .
-     * @return  uint256  .
-     */
     function getDealSuccessFee(
         uint256 _dealId
     ) external view returns (uint256) {
         return dealsMapping[_dealId].successFee;
     }
 
-    /**
-     * @notice  function to return the status of a specified deal.
-     * @param   _dealId  .
-     * @return  uint  .
-     */
     function getDealStatus(uint256 _dealId) external view returns (uint256) {
         return uint256(dealsMapping[_dealId].status);
     }
 
-    /**
-     * @notice  function to return the additional payment limit of a specified deal.
-     * @param   _dealId  .
-     * @return  uint  .
-     */
     function getAdditionalPaymentLimit(
         uint256 _dealId
     ) external view returns (uint256) {
         return additionalPaymentLimit[_dealId];
     }
 
-    /**
-     * @notice  function to return the dealIds of a specified address.
-     * @param   _address  .
-     * @return  uint256[]  .
-     */
-    function getDealsOfAnAddress(
+    function getDealsOf(
         address _address
     ) public view returns (uint256[] memory) {
         uint256[] memory dealsOfAnAddress = new uint256[](dealIds.current());
@@ -643,100 +551,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return dealsOfAnAddress;
     }
 
-    // admin functions
-
-    /**
-     * @notice  function to change the successFee ratio.
-     * @dev     onlyOwner restriction, value is expressed as a percentage.
-     * @param   _fee  .
-     */
-    function changeSuccessFee(uint128 _fee) external onlyOwner {
-        honestWorkSuccessFee = _fee;
-        emit successFeeChangedEvent(_fee);
-    }
-
-    /**
-     * @notice  function to change the registry address.
-     * @dev     onlyOwner restriction.
-     * @param   _registry  .
-     */
-    function changeRegistry(IHWRegistry _registry) external onlyOwner {
-        registry = _registry;
-    }
-
-    /**
-     * @notice  function to claim the successFee earned by HW for a specified deal.
-     * @dev     onlyOwner restriction.
-     * @param   _dealId _feeCollector.
-     */
-    function claimSuccessFee(
-        uint256 _dealId,
-        address _feeCollector
-    ) external onlyOwner {
-        uint256 successFee = dealsMapping[_dealId].successFee;
-
-        if (dealsMapping[_dealId].paymentToken != address(0)) {
-            IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
-            paymentToken.transfer(_feeCollector, successFee);
-        } else {
-            (bool payment, ) = payable(_feeCollector).call{value: successFee}(
-                ""
-            );
-            require(payment, "payment failed");
-        }
-        totalCollectedSuccessFee += successFee;
-        dealsMapping[_dealId].successFee = 0;
-        emit claimSuccessFeeEvent(_dealId, dealsMapping[_dealId].successFee);
-    }
-
-    /**
-     * @notice  function to claim the successFee earned by HW for all deals.
-     * @dev     onlyOwner restriction.
-     * @param   _feeCollector  .
-     */
-    function claimSuccessFeeAll(address _feeCollector) external onlyOwner {
-        for (uint256 i = 1; i <= dealIds.current(); i++) {
-            uint256 successFee = dealsMapping[i].successFee;
-            if (successFee > 0) {
-                if (dealsMapping[i].paymentToken == address(0)) {
-                    (bool payment, ) = payable(_feeCollector).call{
-                        value: successFee
-                    }("");
-                    require(payment, "payment failed");
-                } else {
-                    IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
-                    paymentToken.transfer(_feeCollector, successFee);
-                }
-                dealsMapping[i].successFee = 0;
-            }
-        }
-        emit claimSuccessFeeAllEvent(_feeCollector);
-    }
-
-    /**
-     * @notice  function to change the extra payment limit.
-     * @dev     onlyOwner restriction.
-     * @param   _limit  .
-     */
-    function changeExtraPaymentLimit(uint64 _limit) external onlyOwner {
-        extraPaymentLimit = _limit;
-        emit changeExtraPaymentLimitEvent(_limit);
-    }
-
-    /**
-     * @notice  function to change nativePayment allowances.
-     * @dev     onlyOwner restriction.
-     * @param   _bool  .
-     */
-    function allowNativePayment(bool _bool) external onlyOwner {
-        nativePaymentAllowed = _bool;
-    }
-
-    /**
-     * @notice  function to get Bnb price denominated in BUSD from pancakeswap.
-     * @param   _amount  .
-     */
-    function getBnbPrice(uint256 _amount) public view returns (uint256) {
+    function getEthPrice(uint256 _amount) public view returns (uint256) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
@@ -748,4 +563,32 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     ) public view returns (uint256) {
         return registry.getNFTGrossRevenue(_tokenId);
     }
+
+    event OfferCreated(
+        address indexed _recruiter,
+        address indexed _creator,
+        uint256 indexed _totalPayment,
+        address _paymentToken
+    );
+    event PaymentUnlocked(
+        uint256 _dealId,
+        address indexed _recruiter,
+        uint256 indexed _unlockedAmount
+    );
+    event PaymentClaimed(
+        uint256 indexed _dealId,
+        address indexed _creator,
+        uint256 indexed _paymentReceived
+    );
+    event AdditionalPayment(
+        uint256 indexed _dealId,
+        address indexed _recruiter,
+        uint256 indexed _payment
+    );
+    event PaymentWithdrawn(uint256 indexed _dealId, Status status);
+    event FeeChanged(uint256 _newSuccessFee);
+    event FeeClaimed(uint256 indexed _dealId, uint256 _amount);
+    event ExtraLimitChanged(uint256 _newPaymentLimit);
+    event TotalFeeClaimed(address _collector);
+    event GrossRevenueUpdated(uint256 indexed _tokenId, uint256 _grossRevenue);
 }

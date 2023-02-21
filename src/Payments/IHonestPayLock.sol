@@ -15,7 +15,7 @@ interface IHonestPayLock {
         uint256 totalPayment;
         uint256 successFee;
         uint256 paidAmount;
-        uint256 claimablePayment;
+        uint256 claimableAmount;
         Status status;
         uint128[] recruiterRating;
         uint128[] creatorRating;
@@ -76,11 +76,11 @@ interface IHonestPayLock {
 
     function getPaidAmount(uint256 _dealId) external view returns (uint256);
 
-    function getclaimablePayment(
+    function getClaimableAmount(
         uint256 _dealId
     ) external view returns (uint256);
 
-    function getJobCompletionRate(
+    function getDealCompletionRate(
         uint256 _dealId
     ) external view returns (uint256);
 
@@ -112,7 +112,7 @@ interface IHonestPayLock {
         uint256 _dealId
     ) external view returns (uint256);
 
-    function getDealsOfAnAddress(
+    function getDealsOf(
         address _address
     ) external view returns (uint256[] memory);
 
@@ -122,13 +122,13 @@ interface IHonestPayLock {
 
     function claimSuccessFee(uint256 _dealId, address _feeCollector) external;
 
-    function claimSuccessFeeAll(address _feeCollector) external;
+    function claimTotalSuccessFee(address _feeCollector) external;
 
     function changeExtraPaymentLimit(uint64 _limit) external;
 
     function allowNativePayment(bool _bool) external;
 
-    function getBnbPrice(uint256 _amount) external view returns (uint256);
+    function getEthPrice(uint256 _amount) external view returns (uint256);
 
     function getNFTGrossRevenue(
         uint256 _tokenId

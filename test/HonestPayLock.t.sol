@@ -78,17 +78,11 @@ contract HonestPayLockTest is Test {
         tokens[2] = address(0);
 
         registry = new HWRegistry();
-        hw721 = new HonestWorkNFT("matrix" , tokens);
-        hplock = new HonestPayLock(
-            address(registry),
-            address(hw721)
-        );
+        hw721 = new HonestWorkNFT("matrix", tokens);
+        hplock = new HonestPayLock(address(registry), address(hw721));
 
         registry.setHonestPayLock(address(hplock));
 
-
-
-
         vm.prank(recruiter1);
 
         token.approve(address(hplock), 10000 ether);
@@ -100,8 +94,6 @@ contract HonestPayLockTest is Test {
         vm.prank(recruiter2);
         token.approve(address(hw721), 10000 ether);
 
-
-        
         vm.prank(creator1);
         token.approve(address(hplock), 10000 ether);
         vm.prank(creator1);
@@ -111,11 +103,8 @@ contract HonestPayLockTest is Test {
         token.approve(address(hplock), 10000 ether);
         vm.prank(creator2);
         token.approve(address(hw721), 10000 ether);
-
-
 
         hplock.allowNativePayment(true);
-
 
         vm.prank(deployer);
         registry.addWhitelisted(address(0), 1000 ether);
@@ -133,8 +122,6 @@ contract HonestPayLockTest is Test {
         vm.prank(creator2);
         hw721.publicMint(address(token));
 
-        
-
         //console.log(x);
     }
 
@@ -147,28 +134,41 @@ contract HonestPayLockTest is Test {
         assertTrue(registry.isWhitelisted(address(0)));
     }
 
-
     function testCreateDeal() public {
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
 
         vm.prank(recruiter1);
         uint256 x = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         assert(x == 1);
-
     }
 
     // function testWrongSignature() public {
     //     bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether, 1 );
     //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, message);
     //     bytes memory wrongMessage = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether, 2);
-        
+
     //     vm.prank(recruiter1);
     //     vm.expectRevert();
     //     hplock.createDealSignature{value: 10 ether}(
@@ -182,21 +182,36 @@ contract HonestPayLockTest is Test {
     //}
 
     function testUnlockPayment() public {
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         vm.prank(recruiter1);
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         vm.prank(recruiter1);
         hplock.unlockPayment(1, 2 ether, 7, nftId);
-        assertEq(hplock.getclaimablePayment(1), 2 ether);
+        assertEq(hplock.getClaimableAmount(1), 2 ether);
         assertEq(hplock.getAvgCreatorRating(1), 700);
 
         vm.prank(creator1);
@@ -209,21 +224,36 @@ contract HonestPayLockTest is Test {
     }
 
     function testCompleteDeal() public {
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         vm.prank(recruiter1);
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         vm.prank(recruiter1);
         hplock.unlockPayment(1, 10 ether, 7, nftId);
-        assertEq(hplock.getclaimablePayment(dealId), 10 ether);
+        assertEq(hplock.getClaimableAmount(dealId), 10 ether);
         assertEq(hplock.getAvgCreatorRating(dealId), 700);
 
         vm.prank(creator1);
@@ -238,15 +268,30 @@ contract HonestPayLockTest is Test {
     }
 
     function testWithdrawPayment() public {
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         //uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         vm.prank(recruiter1);
@@ -259,9 +304,19 @@ contract HonestPayLockTest is Test {
 
     function testAdditionalPayment() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
@@ -269,7 +324,10 @@ contract HonestPayLockTest is Test {
             address(0),
             10 ether,
             0,
-            1 ,v,r,s
+            1,
+            v,
+            r,
+            s
         );
         vm.warp(300);
         vm.prank(recruiter1);
@@ -277,19 +335,22 @@ contract HonestPayLockTest is Test {
         vm.prank(recruiter1);
         hplock.additionalPayment{value: 5 ether}(dealId, 5 ether, nftId, 8);
         vm.warp(500);
-        assertEq(hplock.getclaimablePayment(dealId), 5 ether);
+        assertEq(hplock.getClaimableAmount(dealId), 5 ether);
         assertEq(hplock.getAvgCreatorRating(dealId), 800);
-        assertEq(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(5 ether));
+        assertEq(
+            registry.getNFTGrossRevenue(nftId),
+            hplock.getEthPrice(5 ether)
+        );
 
         vm.prank(creator1);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
         vm.prank(creator1);
         hplock.claimPayment(dealId, 3 ether, 5, nftId2);
-        assertEq(hplock.getclaimablePayment(dealId), 2 ether);
+        assertEq(hplock.getClaimableAmount(dealId), 2 ether);
         assertEq(hplock.getAvgRecruiterRating(dealId), 500);
         vm.prank(creator1);
         hplock.claimPayment(dealId, 2 ether, 5, nftId2);
-        assertEq(hplock.getclaimablePayment(dealId), 0 ether);
+        assertEq(hplock.getClaimableAmount(dealId), 0 ether);
         assertEq(hplock.getPaidAmount(dealId), 5 ether);
         assertEq(hplock.getTotalPayment(dealId), 15 ether);
         assertEq(hplock.getAdditionalPaymentLimit(dealId), 1);
@@ -297,15 +358,30 @@ contract HonestPayLockTest is Test {
 
     function testAccess() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -329,15 +405,30 @@ contract HonestPayLockTest is Test {
 
     function testGrossRevenue() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -349,21 +440,44 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 7 ether, 10, nftId2);
 
-        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(7 ether), 1000000);
-        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(7 ether),100000);
+        assertApproxEqAbs(
+            registry.getNFTGrossRevenue(nftId),
+            hplock.getEthPrice(7 ether),
+            1000000
+        );
+        assertApproxEqAbs(
+            registry.getNFTGrossRevenue(nftId2),
+            hplock.getEthPrice(7 ether),
+            100000
+        );
 
         vm.prank(recruiter1);
         hplock.unlockPayment(dealId, 3 ether, 7, nftId);
         vm.prank(creator1);
         hplock.claimPayment(dealId, 3 ether, 10, nftId2);
 
-        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId), hplock.getBnbPrice(10 ether), 1000000);
-        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2), hplock.getBnbPrice(10 ether),100000);
+        assertApproxEqAbs(
+            registry.getNFTGrossRevenue(nftId),
+            hplock.getEthPrice(10 ether),
+            1000000
+        );
+        assertApproxEqAbs(
+            registry.getNFTGrossRevenue(nftId2),
+            hplock.getEthPrice(10 ether),
+            100000
+        );
         assertEq(hplock.getDealStatus(dealId), 1);
 
-        message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 20 ether,0, 1);
-        (v,r,s) = vm.sign(creator1PrivateKey, message);
-        
+        message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            20 ether,
+            0,
+            1
+        );
+        (v, r, s) = vm.sign(creator1PrivateKey, message);
+
         // dealId = hplock.createDeal{value: 20 ether}(
         //     address(recruiter1),
         //     address(creator1),
@@ -379,21 +493,36 @@ contract HonestPayLockTest is Test {
         // vm.prank(creator1);
         // hplock.claimPayment(dealId, 5 ether, 10, nftId2);
 
-        // assertApproxEqAbs(hw721.getGrossRevenue(nftId), hplock.getBnbPrice(21 ether), 1000000);
-        // assertApproxEqAbs(hw721.getGrossRevenue(nftId2), hplock.getBnbPrice(15 ether),100000);
+        // assertApproxEqAbs(hw721.getGrossRevenue(nftId), hplock.getEthPrice(21 ether), 1000000);
+        // assertApproxEqAbs(hw721.getGrossRevenue(nftId2), hplock.getEthPrice(15 ether),100000);
     }
 
     function testSuccessFee() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0,1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         // uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         // uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -435,15 +564,30 @@ contract HonestPayLockTest is Test {
 
     function testOverUnlock() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0,1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -457,15 +601,30 @@ contract HonestPayLockTest is Test {
 
     function testOverClaim() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -482,15 +641,30 @@ contract HonestPayLockTest is Test {
 
     function testOverClaim2() public {
         vm.roll(100);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -510,14 +684,29 @@ contract HonestPayLockTest is Test {
     function testClaimAfterCompletion() public {
         vm.roll(100);
         vm.prank(recruiter1);
-                bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         uint256 dealId = hplock.createDeal{value: 10 ether}(
             address(recruiter1),
             address(creator1),
             address(0),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -541,12 +730,11 @@ contract HonestPayLockTest is Test {
     }
 
     function testNativePrice() public {
-        uint256 price = hplock.getBnbPrice(1 ether);
+        uint256 price = hplock.getEthPrice(1 ether);
         //console.log("price:" , price);
     }
 
-
-    // function testGetDealsOfAnAddress(uint256 _totalPayment, uint256 _nonce) public {
+    // function testgetDealsOf(uint256 _totalPayment, uint256 _nonce) public {
     //     bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(0), 10 ether, _nonce);
     //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, message);
     //     for(uint256 i=0; i<100; i++){
@@ -561,8 +749,7 @@ contract HonestPayLockTest is Test {
     //             message
     //         );
     //     }
-    //     assert(hplock.getDealsOfAnAddress(address(recruiter1)).length == 100);
-
+    //     assert(hplock.getDealsOf(address(recruiter1)).length == 100);
 
     // }
 
@@ -572,15 +759,30 @@ contract HonestPayLockTest is Test {
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal(
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -591,22 +793,41 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 405 ether,300000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            405 ether,
+            300000000000000000
+        );
     }
 
     function testAdditionalPaymentWithToken() public {
         vm.roll(100);
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal(
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -617,7 +838,11 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 405 ether,300000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            405 ether,
+            300000000000000000
+        );
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
@@ -625,15 +850,29 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 410 ether,500000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            410 ether,
+            500000000000000000
+        );
     }
 
     function testCompleteDealWithToken() public {
         vm.roll(100);
         vm.prank(recruiter1);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
@@ -641,7 +880,12 @@ contract HonestPayLockTest is Test {
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -658,16 +902,30 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 12 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 412 ether,1000000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            412 ether,
+            1000000000000000000
+        );
         assertEq(hplock.getDealStatus(dealId), 1);
     }
 
     function testWithdrawPaymentWithToken() public {
         vm.roll(100);
         vm.prank(recruiter1);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
@@ -677,14 +935,18 @@ contract HonestPayLockTest is Test {
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         vm.warp(300);
         vm.prank(recruiter1);
         hplock.withdrawPayment(dealId);
         uint256 balanceAfter = token.balanceOf(address(recruiter1));
         assertEq(balanceAfter, balanceBefore);
-
     }
 
     function testWithdrawPaymentWithToken2() public {
@@ -695,15 +957,30 @@ contract HonestPayLockTest is Test {
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
         uint256 balanceBefore = token.balanceOf(address(recruiter1));
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal(
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         vm.warp(300);
         vm.prank(recruiter1);
@@ -711,27 +988,40 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 1 ether, 10, nftId2);
 
-
         vm.prank(recruiter1);
         hplock.withdrawPayment(dealId);
         uint256 balanceAfter = token.balanceOf(address(recruiter1));
         assertEq(balanceAfter + 1 ether, balanceBefore);
-
     }
 
     function testGrossRevenueWithToken() public {
         vm.roll(100);
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
-        bytes32 message = sigUtils.getMessageHash(address(recruiter1), address(creator1), address(token), 10 ether,0, 1 );
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1
+        );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creator1PrivateKey, hashedMessage);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
         vm.prank(recruiter1);
         uint256 dealId = hplock.createDeal(
             address(recruiter1),
             address(creator1),
             address(token),
-            10 ether,0,1 ,v,r,s
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
@@ -742,7 +1032,11 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 405 ether,300000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            405 ether,
+            300000000000000000
+        );
         vm.prank(recruiter1);
         token.approve(address(hplock), 10 ether);
         vm.prank(recruiter1);
@@ -750,13 +1044,16 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 5 ether, 10, nftId2);
         vm.prank(creator1);
-        assertApproxEqAbs(token.balanceOf(address(creator1)), 410 ether,500000000000000000);
+        assertApproxEqAbs(
+            token.balanceOf(address(creator1)),
+            410 ether,
+            500000000000000000
+        );
         vm.prank(recruiter1);
-        assertApproxEqAbs(registry.getNFTGrossRevenue(nftId2),10 ether,10 ether * 6 / 100);
+        assertApproxEqAbs(
+            registry.getNFTGrossRevenue(nftId2),
+            10 ether,
+            (10 ether * 6) / 100
+        );
     }
-
-
 }
-
-
-
