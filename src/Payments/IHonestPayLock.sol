@@ -14,7 +14,7 @@ interface IHonestPayLock {
         address paymentToken;
         uint256 totalPayment;
         uint256 successFee;
-        uint256 paidAmount;
+        uint256 claimedAmount;
         uint256 claimableAmount;
         Status status;
         uint128[] recruiterRating;
@@ -74,7 +74,7 @@ interface IHonestPayLock {
 
     function getPaymentToken(uint256 _dealId) external view returns (address);
 
-    function getPaidAmount(uint256 _dealId) external view returns (uint256);
+    function getclaimedAmount(uint256 _dealId) external view returns (uint256);
 
     function getClaimableAmount(
         uint256 _dealId
