@@ -1,6 +1,11 @@
 name: Forge-Actions
 
-on: push
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 env:
   FOUNDRY_PROFILE: default
@@ -32,3 +37,7 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+      - name: slither-static-analysis
+        continue-on-error: true
+        uses: luisfontes19/slither-static-analysis-action@v0.3.4
