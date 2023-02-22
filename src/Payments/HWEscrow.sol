@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,7 +11,6 @@ import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 import "../utils/SigUtils.sol";
-
 
 /// @title HonestWork Escrow Contract
 /// @author @takez0_o, @ReddKidd
@@ -38,8 +37,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint128[] creatorRating;
     }
 
-
-
     Counters.Counter public dealIds;
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
@@ -56,7 +53,13 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     mapping(uint256 => uint256) public additionalPaymentLimit;
     mapping(uint256 => Deal) public dealsMapping;
 
-    constructor(address _registry, address _HW721, address _pool, address _stableCoin, address _router) Ownable() {
+    constructor(
+        address _registry,
+        address _HW721,
+        address _pool,
+        address _stableCoin,
+        address _router
+    ) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
         hw721 = HonestWorkNFT(_HW721);

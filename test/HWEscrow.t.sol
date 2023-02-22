@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "../src/Payments/HWEscrow.sol";
-import "../src//HonestWorkNFT.sol";
-import "../src//Registry/HWRegistry.sol";
-import "../src//mock/MockToken.sol";
-import "../src//utils/SigUtils.sol";
+import "../src/HonestWorkNFT.sol";
+import "../src/Registry/HWRegistry.sol";
+import "../src/utils/MockToken.sol";
+import "../src/utils/SigUtils.sol";
 
 contract HonestPayLockTest is Test {
     enum Status {

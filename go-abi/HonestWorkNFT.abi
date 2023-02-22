@@ -149,19 +149,6 @@
     },
     {
       "inputs": [],
-      "name": "TOKEN_CAP",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
       "name": "_tokenIds",
       "outputs": [
         {
@@ -302,6 +289,25 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "getWhitelistToken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "owner",
           "type": "address"
         },
@@ -324,12 +330,12 @@
     },
     {
       "inputs": [],
-      "name": "metadataImplementation",
+      "name": "isPaused",
       "outputs": [
         {
-          "internalType": "address",
+          "internalType": "bool",
           "name": "",
-          "type": "address"
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -381,6 +387,13 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -389,13 +402,20 @@
         }
       ],
       "name": "publicMint",
-      "outputs": [
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "_token",
+          "type": "address"
         }
       ],
+      "name": "removeWhitelistToken",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -471,6 +491,55 @@
         }
       ],
       "name": "setApprovalForAll",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_baseUri",
+          "type": "string"
+        }
+      ],
+      "name": "setBaseUri",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tierOneFee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tierTwoFee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tierThreeFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTiers",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenCap",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTokenCap",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -598,6 +667,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "tokenCap",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -690,6 +772,13 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -735,13 +824,7 @@
         }
       ],
       "name": "whitelistMint",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
