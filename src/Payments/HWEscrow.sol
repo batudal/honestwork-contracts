@@ -12,7 +12,7 @@ import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 import "../utils/SigUtils.sol";
 
-// todo: rename contract to HWEscrow
+
 /// @title HonestWork Escrow Contract
 /// @author @takez0_o, @ReddKidd
 /// @notice Escrow contract for HonestWork
@@ -44,9 +44,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
 
-    // todo: move router,busd,pool to constructor and add a setter function
     IUniswapV2Router01 public router;
-    // todo: don't use chain specific name
+
     IERC20 public stableCoin;
     IPool public pool;
     uint64 public extraPaymentLimit;
