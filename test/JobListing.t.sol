@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/Payments/HonestPayLock.sol";
+import "../src/Payments/HWEscrow.sol";
 import "../src//HonestWorkNFT.sol";
 import "../src//Registry/HWRegistry.sol";
 import "../src//Jobs/JobListing.sol";
