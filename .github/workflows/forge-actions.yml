@@ -1,9 +1,9 @@
-name: test
+name: Forge-Actions
 
-on: workflow_dispatch
+on: push
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: default
 
 jobs:
   check:
