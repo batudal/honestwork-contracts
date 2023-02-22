@@ -12,12 +12,12 @@ import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 import "../utils/SigUtils.sol";
 
-// todo: rename contract to HWEscrow
+
 /// @title HonestWork Escrow Contract
 /// @author @takez0_o, @ReddKidd
 /// @notice Escrow contract for HonestWork
 /// @dev Facilitates deals between creators and recruiters
-contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
+contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     using Counters for Counters.Counter;
 
     enum Status {
@@ -38,16 +38,16 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         uint128[] creatorRating;
     }
 
+
+
     Counters.Counter public dealIds;
     IHWRegistry public registry;
     HonestWorkNFT public hw721;
 
-    // todo: move router,busd,pool to constructor and add a setter function
-    IUniswapV2Router01 public router =
-        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
-    // todo: don't use chain specific name
-    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16);
+    IUniswapV2Router01 public router;
+
+    IERC20 public stableCoin;
+    IPool public pool;
     uint64 public extraPaymentLimit;
     uint128 public honestWorkSuccessFee;
     bool public nativePaymentAllowed;
@@ -56,10 +56,13 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     mapping(uint256 => uint256) public additionalPaymentLimit;
     mapping(uint256 => Deal) public dealsMapping;
 
-    constructor(address _registry, address _HW721) Ownable() {
+    constructor(address _registry, address _HW721, address _pool, address _stableCoin, address _router) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
         hw721 = HonestWorkNFT(_HW721);
+        pool = IPool(_pool);
+        stableCoin = IERC20(_stableCoin);
+        router = IUniswapV2Router01(_router);
     }
 
     //-----------------//
@@ -124,6 +127,18 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
 
     function allowNativePayment(bool _bool) external onlyOwner {
         nativePaymentAllowed = _bool;
+    }
+
+    function setStableCoin(address _stableCoin) external onlyOwner {
+        stableCoin = IERC20(_stableCoin);
+    }
+
+    function setRouter(address _router) external onlyOwner {
+        router = IUniswapV2Router01(_router);
+    }
+
+    function setPool(address _pool) external onlyOwner {
+        pool = IPool(_pool);
     }
 
     //--------------------//
