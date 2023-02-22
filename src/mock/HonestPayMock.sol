@@ -20,7 +20,7 @@
 //         address creator;
 //         address paymentToken;
 //         uint256 totalPayment;
-//         uint256 paidAmount;
+//         uint256 claimedAmount;
 //         uint256 deadline;
 //         uint256 availablePayment;
 //         Status status;
@@ -43,7 +43,7 @@
 //         address _creator,
 //         address _paymentToken,
 //         uint256 _totalPayment,
-//         uint256 _paidAmount,
+//         uint256 _claimedAmount,
 //         uint256 _deadline,
 //         uint256 _nonce,
 //         bytes memory signature

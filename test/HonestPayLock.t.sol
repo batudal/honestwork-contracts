@@ -263,7 +263,7 @@ contract HonestPayLockTest is Test {
         hplock.claimPayment(dealId, 10 ether, 10, nftId);
         uint256 balanceAfter = creator1.balance;
         assert(balanceAfter > balanceBefore);
-        //console.log(paidAmount);
+        //console.log(claimedAmount);
         assertEq(hplock.getDealStatus(dealId), 1);
     }
 
@@ -351,7 +351,7 @@ contract HonestPayLockTest is Test {
         vm.prank(creator1);
         hplock.claimPayment(dealId, 2 ether, 5, nftId2);
         assertEq(hplock.getClaimableAmount(dealId), 0 ether);
-        assertEq(hplock.getPaidAmount(dealId), 5 ether);
+        assertEq(hplock.getclaimedAmount(dealId), 5 ether);
         assertEq(hplock.getTotalPayment(dealId), 15 ether);
         assertEq(hplock.getAdditionalPaymentLimit(dealId), 1);
     }

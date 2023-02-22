@@ -31,7 +31,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         address paymentToken;
         uint256 totalPayment;
         uint256 successFee;
-        uint256 paidAmount;
+        uint256 claimedAmount;
         uint256 claimableAmount;
         Status status;
         uint128[] recruiterRating;
@@ -259,7 +259,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
 
         require(
             currentDeal.totalPayment >=
-                currentDeal.claimableAmount + currentDeal.paidAmount,
+                currentDeal.claimableAmount + currentDeal.claimedAmount,
             "can not go above total payment, use additional payment function pls"
         );
         if (_rating != 0) {
@@ -290,7 +290,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         );
         address _paymentToken = currentDeal.paymentToken;
         uint256 amountToBeWithdrawn = currentDeal.totalPayment -
-            currentDeal.paidAmount;
+            currentDeal.claimedAmount;
         if (_paymentToken == address(0)) {
             (bool payment, ) = payable(currentDeal.recruiter).call{
                 value: amountToBeWithdrawn
@@ -334,7 +334,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
             "only creator owned nftId can be passed as an argument"
         );
         address _paymentToken = currentDeal.paymentToken;
-        currentDeal.paidAmount += _withdrawAmount;
+        currentDeal.claimedAmount += _withdrawAmount;
         currentDeal.claimableAmount -= _withdrawAmount;
         currentDeal.recruiterRating.push(_rating * 100);
         currentDeal.successFee +=
@@ -359,7 +359,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
                 : _withdrawAmount
         );
         registry.setNFTGrossRevenue(_creatorNFT, grossRev);
-        if (currentDeal.paidAmount >= currentDeal.totalPayment) {
+        if (currentDeal.claimedAmount >= currentDeal.totalPayment) {
             currentDeal.status = Status.JobCompleted;
         }
         emit GrossRevenueUpdated(_creatorNFT, grossRev);
@@ -449,8 +449,8 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
         return dealsMapping[_dealId].paymentToken;
     }
 
-    function getPaidAmount(uint256 _dealId) external view returns (uint256) {
-        return dealsMapping[_dealId].paidAmount;
+    function getclaimedAmount(uint256 _dealId) external view returns (uint256) {
+        return dealsMapping[_dealId].claimedAmount;
     }
 
     function getClaimableAmount(
@@ -462,7 +462,7 @@ contract HonestPayLock is Ownable, ReentrancyGuard, SigUtils {
     function getDealCompletionRate(
         uint256 _dealId
     ) external view returns (uint256) {
-        return ((dealsMapping[_dealId].paidAmount * 100) /
+        return ((dealsMapping[_dealId].claimedAmount * 100) /
             dealsMapping[_dealId].totalPayment);
     }
 
