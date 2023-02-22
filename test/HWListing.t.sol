@@ -1,14 +1,14 @@
-// // SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "../src/Payments/HWEscrow.sol";
 import "../src//HonestWorkNFT.sol";
 import "../src//Registry/HWRegistry.sol";
-import "../src//Jobs/JobListing.sol";
+import "../src//Jobs/HWListing.sol";
 import "../src//mock/MockToken.sol";
 
-contract JobListingTest is Test {
+contract HWListingTest is Test {
     struct Payment {
         address token; // 0x0 for ETH
         uint256 amount;
@@ -18,7 +18,7 @@ contract JobListingTest is Test {
     uint256 bscFork;
 
     HWRegistry public registry;
-    JobListing public jobListing;
+    HWListing public listing;
     MockToken public token;
     MockToken public token2;
     MockToken public token3;
@@ -32,7 +32,7 @@ contract JobListingTest is Test {
         bscFork = vm.createFork("https://bsc-dataseed.binance.org/");
         vm.selectFork(bscFork);
         registry = new HWRegistry();
-        jobListing = new JobListing(address(registry));
+        listing = new HWListing(address(registry));
         token = new MockToken("MCK", "MOCK");
         token2 = new MockToken("MCK", "MOCK");
         token3 = new MockToken("MCK", "MOCK");
@@ -64,24 +64,21 @@ contract JobListingTest is Test {
         registry.addWhitelisted(address(token), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         vm.prank(recruiter1);
-        token.approve(address(jobListing), 2 ether);
+        token.approve(address(listing), 2 ether);
         vm.prank(recruiter1);
-        jobListing.payForListing(address(token), 1 ether);
+        listing.payForListing(address(token), 1 ether);
 
         assertEq(token.balanceOf(address(recruiter1)), 0 ether);
-        assertEq(token.balanceOf(address(jobListing)), 1 ether);
+        assertEq(token.balanceOf(address(listing)), 1 ether);
         assertEq(token.balanceOf(address(deployer)), 49999 ether);
         assertEq(token.balanceOf(address(registry)), 0 ether);
+        assertEq(listing.getLatestPayment(address(recruiter1)).amount, 1 ether);
         assertEq(
-            jobListing.getLatestPayment(address(recruiter1)).amount,
-            1 ether
-        );
-        assertEq(
-            jobListing.getLatestPayment(address(recruiter1)).token,
+            listing.getLatestPayment(address(recruiter1)).token,
             address(token)
         );
         assertEq(
-            jobListing.getLatestPayment(address(recruiter1)).listingDate,
+            listing.getLatestPayment(address(recruiter1)).listingDate,
             block.timestamp
         );
     }
@@ -93,14 +90,12 @@ contract JobListingTest is Test {
         registry.addWhitelisted(address(0), 1000 ether);
         assertEq(registry.isWhitelisted(address(0)), true);
         vm.prank(recruiter1);
-        jobListing.payForListingEth{value: 1 ether}(200 ether, 100);
-        assert(jobListing.getTokenBalance() > 200 ether);
-        //console.log(jobListing.getTokenBalance());
+        listing.payForListingEth{value: 1 ether}(200 ether, 100);
+        assert(listing.getTokenBalance() > 200 ether);
+        //console.log(listing.getTokenBalance());
         vm.prank(deployer);
-        jobListing.withdrawAllEarnings(
-            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
-        );
-        assertEq(token.balanceOf(address(jobListing)), 0 ether);
+        listing.withdrawAllEarnings(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        assertEq(token.balanceOf(address(listing)), 0 ether);
     }
 
     function testWithdrawAll() public {
@@ -114,36 +109,36 @@ contract JobListingTest is Test {
         assertEq(registry.isWhitelisted(address(token3)), true);
 
         vm.prank(recruiter1);
-        token.approve(address(jobListing), 1 ether);
+        token.approve(address(listing), 1 ether);
 
         vm.prank(recruiter2);
-        token2.approve(address(jobListing), 2 ether);
+        token2.approve(address(listing), 2 ether);
 
         vm.prank(creator2);
-        token3.approve(address(jobListing), 3 ether);
+        token3.approve(address(listing), 3 ether);
 
         vm.prank(recruiter1);
-        jobListing.payForListing(address(token), 1 ether);
+        listing.payForListing(address(token), 1 ether);
 
         vm.prank(recruiter2);
-        jobListing.payForListing(address(token2), 1 ether);
+        listing.payForListing(address(token2), 1 ether);
 
         vm.prank(creator2);
-        jobListing.payForListing(address(token3), 1 ether);
+        listing.payForListing(address(token3), 1 ether);
 
-        assertEq(token.balanceOf(address(jobListing)), 1 ether);
-        assertEq(token2.balanceOf(address(jobListing)), 1 ether);
-        assertEq(token3.balanceOf(address(jobListing)), 1 ether);
+        assertEq(token.balanceOf(address(listing)), 1 ether);
+        assertEq(token2.balanceOf(address(listing)), 1 ether);
+        assertEq(token3.balanceOf(address(listing)), 1 ether);
 
         vm.prank(deployer);
-        jobListing.withdrawAllTokens();
-        assertEq(token.balanceOf(address(jobListing)), 0 ether);
-        assertEq(token2.balanceOf(address(jobListing)), 0 ether);
-        assertEq(token3.balanceOf(address(jobListing)), 0 ether);
+        listing.withdrawAllTokens();
+        assertEq(token.balanceOf(address(listing)), 0 ether);
+        assertEq(token2.balanceOf(address(listing)), 0 ether);
+        assertEq(token3.balanceOf(address(listing)), 0 ether);
     }
 
     function testgetEthPrice() public {
         vm.prank(deployer);
-        assert(jobListing.getEthPrice(1 ether) > 250 ether);
+        assert(listing.getEthPrice(1 ether) > 250 ether);
     }
 }

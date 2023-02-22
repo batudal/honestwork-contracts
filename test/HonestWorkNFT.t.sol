@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/Payments/HWEscrow.sol";
 import "../src//HonestWorkNFT.sol";
 import "../src//Registry/HWRegistry.sol";
-import "../src//Jobs/JobListing.sol";
+import "../src//Jobs/HWListing.sol";
 import "../src//mock/MockToken.sol";
 import "../src/HonestWorkNFT.sol";
 
@@ -54,7 +55,13 @@ contract HonestWorkNFTTest is Test {
         tokens[2] = address(0);
 
         honestWorkNFT = new HonestWorkNFT("matrix", tokens);
-        hplock = new HWEscrow(address(registry), address(honestWorkNFT),0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,0x10ED43C718714eb63d5aA57B78B54704E256024E);
+        hplock = new HWEscrow(
+            address(registry),
+            address(honestWorkNFT),
+            0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,
+            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,
+            0x10ED43C718714eb63d5aA57B78B54704E256024E
+        );
         sigUtils = new SigUtils();
 
         //console.log(x);
@@ -294,7 +301,6 @@ contract HonestWorkNFTTest is Test {
         honestWorkNFT.adminMint(address(deployer), 2);
         assertEq(honestWorkNFT.balanceOf(address(deployer)), 2);
 
-        
         vm.prank(deployer);
         honestWorkNFT.adminMint(address(deployer), 3);
         assertEq(honestWorkNFT.balanceOf(address(deployer)), 3);
@@ -320,12 +326,7 @@ contract HonestWorkNFTTest is Test {
 
         assertEq(honestWorkNFT.balanceOf(address(recruiter1)), 1);
         assertEq(honestWorkNFT.tokenOfOwnerByIndex(address(recruiter1), 0), 1);
-
     }
-
-
-
-    
 }
 
 // address recipient,

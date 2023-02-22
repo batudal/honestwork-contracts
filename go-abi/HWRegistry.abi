@@ -155,7 +155,7 @@
       "name": "honestPayLock",
       "outputs": [
         {
-          "internalType": "contract IHonestPayLock",
+          "internalType": "contract IHWEscrow",
           "name": "",
           "type": "address"
         }

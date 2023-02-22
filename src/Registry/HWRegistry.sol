@@ -4,7 +4,7 @@ pragma solidity 0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "../Payments/IHonestPayLock.sol";
+import "../Payments/IHWEscrow.sol";
 
 contract HWRegistry is Ownable {
     struct Whitelist {
@@ -13,7 +13,7 @@ contract HWRegistry is Ownable {
     }
 
     Counters.Counter public counter;
-    IHonestPayLock public honestPayLock;
+    IHWEscrow public honestPayLock;
 
     mapping(uint256 => Whitelist) public whitelisted;
     mapping(uint256 => uint256) public nftGrossRevenue;
@@ -101,7 +101,7 @@ contract HWRegistry is Ownable {
     function setHonestPayLock(
         address _address
     ) external onlyOwner returns (bool) {
-        honestPayLock = IHonestPayLock(_address);
+        honestPayLock = IHWEscrow(_address);
         return true;
     }
 
