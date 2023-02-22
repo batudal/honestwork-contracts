@@ -8,11 +8,10 @@ import "../Registry/IHWRegistry.sol";
 import "../utils/IUniswapV2Router01.sol";
 import "../utils/IPool.sol";
 
-// todo: rename contract to HWJobListing
 /// @title HonestWork Job Listing Contract
 /// @author @takez0_o, @ReddKidd
 /// @notice Accepts listing payments and distributes earnings
-contract JobListing is Ownable {
+contract HWListing is Ownable {
     struct Payment {
         address token;
         uint256 amount;

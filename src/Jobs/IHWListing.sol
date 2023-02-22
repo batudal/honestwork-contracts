@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-interface IJobListing {
+interface IHWListing {
     struct Payment {
         address token;
         uint256 amount;

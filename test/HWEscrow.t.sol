@@ -1,4 +1,4 @@
-// // SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
@@ -36,10 +36,9 @@ contract HonestPayLockTest is Test {
     uint256 internal recruiter2PrivateKey;
 
     function setUp() public {
-
-            //pool 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16
-            //busd 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
-            //router 0x10ED43C718714eb63d5aA57B78B54704E256024E
+        //pool 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16
+        //busd 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
+        //router 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
         sigUtils = new SigUtils();
         creator1PrivateKey = 0xC1;
@@ -84,7 +83,13 @@ contract HonestPayLockTest is Test {
 
         registry = new HWRegistry();
         hw721 = new HonestWorkNFT("matrix", tokens);
-        hplock = new HWEscrow(address(registry), address(hw721),0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,0x10ED43C718714eb63d5aA57B78B54704E256024E);
+        hplock = new HWEscrow(
+            address(registry),
+            address(hw721),
+            0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,
+            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,
+            0x10ED43C718714eb63d5aA57B78B54704E256024E
+        );
 
         registry.setHonestPayLock(address(hplock));
 

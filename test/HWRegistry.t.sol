@@ -1,15 +1,14 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/Payments/HWEscrow.sol";
 import "../src//HonestWorkNFT.sol";
 import "../src//Registry/HWRegistry.sol";
-import "../src//Jobs/JobListing.sol";
+import "../src//Jobs/HWListing.sol";
 import "../src//mock/MockToken.sol";
 
 contract HWRegistryTest is Test {
-
-
     HWRegistry public registry;
     MockToken public token;
     address public deployer = 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496;
@@ -22,7 +21,6 @@ contract HWRegistryTest is Test {
         registry = new HWRegistry();
         token = new MockToken("MCK", "MOCK");
 
-
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
         creator1 = vm.addr(3);
@@ -32,7 +30,6 @@ contract HWRegistryTest is Test {
         vm.deal(creator1, 100 ether);
         vm.deal(creator2, 100 ether);
         vm.prank(recruiter1);
-
 
         //console.log(x);
     }
@@ -50,7 +47,6 @@ contract HWRegistryTest is Test {
         assertEq(registry.isWhitelisted(address(token)), true);
         assertEq(registry.isAllowedAmount(address(token), 1500 ether), false);
         assertEq(registry.isAllowedAmount(address(token), 500 ether), true);
-
     }
 
     function testUpdateWhitelisted() public {
@@ -63,7 +59,6 @@ contract HWRegistryTest is Test {
         assertEq(registry.isAllowedAmount(address(token), 1500 ether), true);
         assertEq(registry.isAllowedAmount(address(token), 500 ether), true);
         assertEq(registry.isAllowedAmount(address(token), 2000 ether), false);
-
     }
 
     function testAddWhitelist(address _adress, uint256 _amount) public {
@@ -83,7 +78,4 @@ contract HWRegistryTest is Test {
         registry.removeWhitelisted(address(token));
         assertEq(registry.isWhitelisted(address(token)), false);
     }
-
-
-
 }
