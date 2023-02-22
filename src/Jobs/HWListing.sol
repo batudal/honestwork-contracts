@@ -18,18 +18,23 @@ contract HWListing is Ownable {
         uint256 listingDate;
     }
 
-    // todo: move router,busd,pool to constructor and add a setter function
     IHWRegistry public registry;
-    IUniswapV2Router01 public router =
-        IUniswapV2Router01(0x10ED43C718714eb63d5aA57B78B54704E256024E);
-    // todo: don't use chain specific name
-    IERC20 public busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-    IPool public pool = IPool(0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16);
+    IUniswapV2Router01 public router;
+    IERC20 public stableCoin;
+    IPool public pool;
 
     mapping(address => Payment[]) payments;
 
-    constructor(address _registry) {
+    constructor(
+        address _registry,
+        address _pool,
+        address _stableCoin,
+        address _router
+    ) {
         registry = IHWRegistry(_registry);
+        pool = IPool(_pool);
+        stableCoin = IERC20(_stableCoin);
+        router = IUniswapV2Router01(_router);
     }
 
     modifier checkWhitelist(address _token) {
@@ -101,7 +106,7 @@ contract HWListing is Ownable {
 
         address[] memory path = new address[](2);
         path[0] = router.WETH();
-        path[1] = address(busd);
+        path[1] = address(stableCoin);
         uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(
             _minTokensOut,
             path,
@@ -136,7 +141,7 @@ contract HWListing is Ownable {
     }
 
     function getTokenBalance() external view returns (uint) {
-        return busd.balanceOf(address(this));
+        return stableCoin.balanceOf(address(this));
     }
 
     event PaymentAdded(address indexed _token, uint256 _amount);

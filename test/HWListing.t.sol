@@ -32,7 +32,12 @@ contract HWListingTest is Test {
         bscFork = vm.createFork("https://bsc-dataseed.binance.org/");
         vm.selectFork(bscFork);
         registry = new HWRegistry();
-        listing = new HWListing(address(registry));
+        listing = new HWListing(
+            address(registry),
+            0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,
+            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,
+            0x10ED43C718714eb63d5aA57B78B54704E256024E
+        );
         token = new MockToken("MCK", "MOCK");
         token2 = new MockToken("MCK", "MOCK");
         token3 = new MockToken("MCK", "MOCK");
