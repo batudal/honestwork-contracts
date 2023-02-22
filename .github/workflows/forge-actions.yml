@@ -35,7 +35,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test --rpc-url https://bsc-dataseed.binance.org/ -vvv
         id: test
 
       - name: slither-static-analysis
