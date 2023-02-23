@@ -39,7 +39,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     Counters.Counter public dealIds;
     IHWRegistry public registry;
-    HonestWorkNFT public hw721;
 
     IUniswapV2Router01 public router;
 
@@ -55,14 +54,12 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     constructor(
         address _registry,
-        address _HW721,
         address _pool,
         address _stableCoin,
         address _router
     ) Ownable() {
         honestWorkSuccessFee = 5;
         registry = IHWRegistry(_registry);
-        hw721 = HonestWorkNFT(_HW721);
         pool = IPool(_pool);
         stableCoin = IERC20(_stableCoin);
         router = IUniswapV2Router01(_router);
@@ -346,10 +343,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             currentDeal.claimableAmount >= _withdrawAmount,
             "desired payment is not available yet"
         );
-        require(
-            hw721.tokenOfOwnerByIndex(currentDeal.creator, 0) == _creatorNFT,
-            "only creator owned nftId can be passed as an argument"
-        );
+
         address _paymentToken = currentDeal.paymentToken;
         currentDeal.claimedAmount += _withdrawAmount;
         currentDeal.claimableAmount -= _withdrawAmount;
@@ -414,11 +408,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             "only recruiter can add payments"
         );
 
-        require(
-            hw721.tokenOfOwnerByIndex(currentDeal.recruiter, 0) ==
-                _recruiterNFT,
-            "only recruiter owned nftId can be passed as an argument"
-        );
         address _paymentToken = currentDeal.paymentToken;
         if (_paymentToken == address(0)) {
             require(
