@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/Payments/HWEscrow.sol";
+import "../src/HWEscrow.sol";
 import "../src/HonestWorkNFT.sol";
-import "../src/Registry/HWRegistry.sol";
-import "../src/Jobs/HWListing.sol";
+import "../src/HWRegistry.sol";
+import "../src/HWListing.sol";
 import "../src/utils/MockToken.sol";
 
 contract HWListingTest is Test {
