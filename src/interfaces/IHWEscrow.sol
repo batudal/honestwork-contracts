@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
-import "../Registry/IHWRegistry.sol";
+import "./IHWRegistry.sol";
 
 interface IHWEscrow {
     enum Status {

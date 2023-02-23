@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "../Payments/IHWEscrow.sol";
+import "./interfaces/IHWEscrow.sol";
 
 contract HWRegistry is Ownable {
     struct Whitelist {
@@ -13,7 +13,7 @@ contract HWRegistry is Ownable {
     }
 
     Counters.Counter public counter;
-    IHWEscrow public honestPayLock;
+    IHWEscrow public hwEscrow;
 
     mapping(uint256 => Whitelist) public whitelisted;
     mapping(uint256 => uint256) public nftGrossRevenue;
@@ -98,24 +98,22 @@ contract HWRegistry is Ownable {
         return whitelisted_;
     }
 
-    function setHonestPayLock(
-        address _address
-    ) external onlyOwner returns (bool) {
-        honestPayLock = IHWEscrow(_address);
+    function setHWEscrow(address _address) external onlyOwner returns (bool) {
+        hwEscrow = IHWEscrow(_address);
         return true;
     }
 
     function setNFTGrossRevenue(
         uint256 _id,
         uint256 _amount
-    ) external onlyHonestPayLock {
+    ) external onlyHWEscrow {
         nftGrossRevenue[_id] += _amount;
     }
 
-    modifier onlyHonestPayLock() {
+    modifier onlyHWEscrow() {
         require(
-            msg.sender == address(honestPayLock),
-            "HWRegistry: Only HonestPayLock can call this function"
+            msg.sender == address(hwEscrow),
+            "HWRegistry: Only HWEscrow can call this function"
         );
         _;
     }

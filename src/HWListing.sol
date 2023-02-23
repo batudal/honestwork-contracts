@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import "../../lib/openzeppelin-contracts/contracts/utils/Counters.sol";
-import "../Registry/IHWRegistry.sol";
-import "../utils/IUniswapV2Router01.sol";
-import "../utils/IPool.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "./interfaces/IHWRegistry.sol";
+import "./interfaces/IUniswapV2Router01.sol";
+import "./interfaces/IPool.sol";
 
 /// @title HonestWork Job Listing Contract
 /// @author @takez0_o, @ReddKidd

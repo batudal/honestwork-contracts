@@ -2,13 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/Payments/HWEscrow.sol";
+import "../src/HWEscrow.sol";
 import "../src/HonestWorkNFT.sol";
-import "../src/Registry/HWRegistry.sol";
+import "../src/HWRegistry.sol";
 import "../src/utils/MockToken.sol";
 import "../src/utils/SigUtils.sol";
 
-contract HonestPayLockTest is Test {
+contract HWEscrowTest is Test {
     enum Status {
         OfferInitiated,
         JobCompleted,
@@ -91,7 +91,7 @@ contract HonestPayLockTest is Test {
             0x10ED43C718714eb63d5aA57B78B54704E256024E
         );
 
-        registry.setHonestPayLock(address(hplock));
+        registry.setHWEscrow(address(hplock));
 
         vm.prank(recruiter1);
 
