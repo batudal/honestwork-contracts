@@ -150,8 +150,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -197,8 +196,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -239,8 +237,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -283,8 +280,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -319,8 +315,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -373,8 +368,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -420,8 +414,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -483,8 +476,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             20 ether,
-            0,
-            1
+            0
         );
         (v, r, s) = vm.sign(creator1PrivateKey, message);
 
@@ -514,8 +506,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -579,8 +570,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -616,8 +606,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -656,8 +645,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -699,8 +687,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(0),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -774,8 +761,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -819,8 +805,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -875,8 +860,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -928,8 +912,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -972,8 +955,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -1013,8 +995,7 @@ contract HonestPayLockTest is Test {
             address(creator1),
             address(token),
             10 ether,
-            0,
-            1
+            0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(

@@ -201,8 +201,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
                 _creator,
                 _paymentToken,
                 _totalPayment,
-                _downPayment,
-                _recruiterNFTId
+                _downPayment
             )
         );
 
