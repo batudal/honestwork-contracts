@@ -330,7 +330,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             currentDeal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
-
         require(
             _rating >= 0 && _rating <= 10,
             "rating must be between 0 and 10"
@@ -543,18 +542,31 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     function getDealsOf(
         address _address
     ) public view returns (uint256[] memory) {
-        uint256[] memory dealsOfAnAddress = new uint256[](dealIds.current());
+        uint256[] memory deals = new uint256[](getDealsCount(_address));
         uint256 arrayLocation = 0;
         for (uint256 i = 0; i <= dealIds.current(); i++) {
             if (
                 dealsMapping[i].creator == _address ||
                 dealsMapping[i].recruiter == _address
             ) {
-                dealsOfAnAddress[arrayLocation] = i;
+                deals[arrayLocation] = i;
                 arrayLocation++;
             }
         }
-        return dealsOfAnAddress;
+        return deals;
+    }
+
+    function getDealsCount(address _address) internal view returns (uint256) {
+        uint256 count;
+        for (uint256 i = 0; i <= dealIds.current(); i++) {
+            if (
+                dealsMapping[i].creator == _address ||
+                dealsMapping[i].recruiter == _address
+            ) {
+                count++;
+            }
+        }
+        return count;
     }
 
     function getEthPrice(uint256 _amount) public view returns (uint256) {
