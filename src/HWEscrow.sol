@@ -304,7 +304,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         );
         address _paymentToken = currentDeal.paymentToken;
         uint256 amountToBeWithdrawn = currentDeal.totalPayment -
-            currentDeal.claimedAmount;
+            currentDeal.claimedAmount -
+            currentDeal.claimableAmount;
         if (_paymentToken == address(0)) {
             (bool payment, ) = payable(currentDeal.recruiter).call{
                 value: amountToBeWithdrawn
