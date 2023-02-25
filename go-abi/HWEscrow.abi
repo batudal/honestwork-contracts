@@ -8,11 +8,6 @@
         },
         {
           "internalType": "address",
-          "name": "_HW721",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
           "name": "_pool",
           "type": "address"
         },
@@ -619,6 +614,25 @@
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_address",
+          "type": "address"
+        }
+      ],
+      "name": "getAggregatedRating",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint256",
           "name": "_dealId",
           "type": "uint256"
@@ -922,11 +936,6 @@
           "internalType": "uint256",
           "name": "_downPayment",
           "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_deadline",
-          "type": "uint256"
         }
       ],
       "name": "getMessageHash",
@@ -976,6 +985,19 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPrecision",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -1075,19 +1097,6 @@
           "internalType": "uint128",
           "name": "",
           "type": "uint128"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "hw721",
-      "outputs": [
-        {
-          "internalType": "contract HonestWorkNFT",
-          "name": "",
-          "type": "address"
         }
       ],
       "stateMutability": "view",

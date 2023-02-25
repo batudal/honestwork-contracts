@@ -36,7 +36,7 @@ type HWRegistryWhitelist struct {
 
 // HwregistryMetaData contains all meta data concerning the Hwregistry contract.
 var HwregistryMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"WhitelistedAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"WhitelistedRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"WhitelistedUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"addWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"allWhitelisted\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxAllowed\",\"type\":\"uint256\"}],\"internalType\":\"structHWRegistry.Whitelist[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"counter\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"}],\"name\":\"getNFTGrossRevenue\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"honestPayLock\",\"outputs\":[{\"internalType\":\"contractIHWEscrow\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"isAllowedAmount\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nftGrossRevenue\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"removeWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"setHonestPayLock\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"setNFTGrossRevenue\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"updateWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"whitelisted\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxAllowed\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"WhitelistedAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"WhitelistedRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"WhitelistedUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"addWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"allWhitelisted\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxAllowed\",\"type\":\"uint256\"}],\"internalType\":\"structHWRegistry.Whitelist[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"counter\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"}],\"name\":\"getNFTGrossRevenue\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"hwEscrow\",\"outputs\":[{\"internalType\":\"contractIHWEscrow\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"isAllowedAmount\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nftGrossRevenue\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"removeWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"setHWEscrow\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"setNFTGrossRevenue\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxAllowed\",\"type\":\"uint256\"}],\"name\":\"updateWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"whitelisted\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maxAllowed\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // HwregistryABI is the input ABI used to generate the binding from.
@@ -278,12 +278,12 @@ func (_Hwregistry *HwregistryCallerSession) GetNFTGrossRevenue(_id *big.Int) (*b
 	return _Hwregistry.Contract.GetNFTGrossRevenue(&_Hwregistry.CallOpts, _id)
 }
 
-// HonestPayLock is a free data retrieval call binding the contract method 0xf3d5a8a2.
+// HwEscrow is a free data retrieval call binding the contract method 0x24989f6f.
 //
-// Solidity: function honestPayLock() view returns(address)
-func (_Hwregistry *HwregistryCaller) HonestPayLock(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function hwEscrow() view returns(address)
+func (_Hwregistry *HwregistryCaller) HwEscrow(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _Hwregistry.contract.Call(opts, &out, "honestPayLock")
+	err := _Hwregistry.contract.Call(opts, &out, "hwEscrow")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -295,18 +295,18 @@ func (_Hwregistry *HwregistryCaller) HonestPayLock(opts *bind.CallOpts) (common.
 
 }
 
-// HonestPayLock is a free data retrieval call binding the contract method 0xf3d5a8a2.
+// HwEscrow is a free data retrieval call binding the contract method 0x24989f6f.
 //
-// Solidity: function honestPayLock() view returns(address)
-func (_Hwregistry *HwregistrySession) HonestPayLock() (common.Address, error) {
-	return _Hwregistry.Contract.HonestPayLock(&_Hwregistry.CallOpts)
+// Solidity: function hwEscrow() view returns(address)
+func (_Hwregistry *HwregistrySession) HwEscrow() (common.Address, error) {
+	return _Hwregistry.Contract.HwEscrow(&_Hwregistry.CallOpts)
 }
 
-// HonestPayLock is a free data retrieval call binding the contract method 0xf3d5a8a2.
+// HwEscrow is a free data retrieval call binding the contract method 0x24989f6f.
 //
-// Solidity: function honestPayLock() view returns(address)
-func (_Hwregistry *HwregistryCallerSession) HonestPayLock() (common.Address, error) {
-	return _Hwregistry.Contract.HonestPayLock(&_Hwregistry.CallOpts)
+// Solidity: function hwEscrow() view returns(address)
+func (_Hwregistry *HwregistryCallerSession) HwEscrow() (common.Address, error) {
+	return _Hwregistry.Contract.HwEscrow(&_Hwregistry.CallOpts)
 }
 
 // IsAllowedAmount is a free data retrieval call binding the contract method 0x83ed69c1.
@@ -541,25 +541,25 @@ func (_Hwregistry *HwregistryTransactorSession) RenounceOwnership() (*types.Tran
 	return _Hwregistry.Contract.RenounceOwnership(&_Hwregistry.TransactOpts)
 }
 
-// SetHonestPayLock is a paid mutator transaction binding the contract method 0x20820803.
+// SetHWEscrow is a paid mutator transaction binding the contract method 0xf5f55714.
 //
-// Solidity: function setHonestPayLock(address _address) returns(bool)
-func (_Hwregistry *HwregistryTransactor) SetHonestPayLock(opts *bind.TransactOpts, _address common.Address) (*types.Transaction, error) {
-	return _Hwregistry.contract.Transact(opts, "setHonestPayLock", _address)
+// Solidity: function setHWEscrow(address _address) returns(bool)
+func (_Hwregistry *HwregistryTransactor) SetHWEscrow(opts *bind.TransactOpts, _address common.Address) (*types.Transaction, error) {
+	return _Hwregistry.contract.Transact(opts, "setHWEscrow", _address)
 }
 
-// SetHonestPayLock is a paid mutator transaction binding the contract method 0x20820803.
+// SetHWEscrow is a paid mutator transaction binding the contract method 0xf5f55714.
 //
-// Solidity: function setHonestPayLock(address _address) returns(bool)
-func (_Hwregistry *HwregistrySession) SetHonestPayLock(_address common.Address) (*types.Transaction, error) {
-	return _Hwregistry.Contract.SetHonestPayLock(&_Hwregistry.TransactOpts, _address)
+// Solidity: function setHWEscrow(address _address) returns(bool)
+func (_Hwregistry *HwregistrySession) SetHWEscrow(_address common.Address) (*types.Transaction, error) {
+	return _Hwregistry.Contract.SetHWEscrow(&_Hwregistry.TransactOpts, _address)
 }
 
-// SetHonestPayLock is a paid mutator transaction binding the contract method 0x20820803.
+// SetHWEscrow is a paid mutator transaction binding the contract method 0xf5f55714.
 //
-// Solidity: function setHonestPayLock(address _address) returns(bool)
-func (_Hwregistry *HwregistryTransactorSession) SetHonestPayLock(_address common.Address) (*types.Transaction, error) {
-	return _Hwregistry.Contract.SetHonestPayLock(&_Hwregistry.TransactOpts, _address)
+// Solidity: function setHWEscrow(address _address) returns(bool)
+func (_Hwregistry *HwregistryTransactorSession) SetHWEscrow(_address common.Address) (*types.Transaction, error) {
+	return _Hwregistry.Contract.SetHWEscrow(&_Hwregistry.TransactOpts, _address)
 }
 
 // SetNFTGrossRevenue is a paid mutator transaction binding the contract method 0x155e85c4.

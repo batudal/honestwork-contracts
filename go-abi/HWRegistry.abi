@@ -152,7 +152,7 @@
     },
     {
       "inputs": [],
-      "name": "honestPayLock",
+      "name": "hwEscrow",
       "outputs": [
         {
           "internalType": "contract IHWEscrow",
@@ -272,7 +272,7 @@
           "type": "address"
         }
       ],
-      "name": "setHonestPayLock",
+      "name": "setHWEscrow",
       "outputs": [
         {
           "internalType": "bool",
