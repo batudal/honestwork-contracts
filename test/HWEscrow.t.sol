@@ -331,6 +331,8 @@ contract HWEscrowTest is Test {
             s
         );
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        assertEq(hplock.getAggregatedRating(address(recruiter1)), 0);
+
         vm.prank(recruiter1);
         hplock.unlockPayment(dealId, 5 ether, 7, nftId);
         vm.prank(creator1);
@@ -365,6 +367,7 @@ contract HWEscrowTest is Test {
             _s
         );
         uint256 _nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+
         vm.prank(recruiter1);
         hplock.unlockPayment(_dealId, 5 ether, 1, _nftId);
         vm.prank(creator1);

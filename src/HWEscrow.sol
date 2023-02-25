@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IHWRegistry.sol";
-import "./HonestWorkNFT.sol";
 import "./interfaces/IHWRegistry.sol";
 import "./interfaces/IUniswapV2Router01.sol";
 import "./interfaces/IPool.sol";
@@ -542,7 +541,11 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
                 gross_amount += (deal.claimedAmount + deal.claimableAmount);
             }
         }
-        return gross_rating / gross_amount;
+        if (gross_amount == 0) {
+            return 0;
+        } else {
+            return gross_rating / gross_amount;
+        }
     }
 
     function getTotalSuccessFee() external view returns (uint256) {
