@@ -439,7 +439,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     //  view methods  //
     //----------------//
 
-    function getDeal(uint256 _dealId) external view returns (Deal memory) {
+    function getDeal(uint256 _dealId) public view returns (Deal memory) {
         return dealsMapping[_dealId];
     }
 
@@ -490,7 +490,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     function getAvgCreatorRating(
         uint256 _dealId
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -504,7 +504,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     function getAvgRecruiterRating(
         uint256 _dealId
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -514,6 +514,23 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             sum += dealsMapping[_dealId].recruiterRating[i];
         }
         return (sum / dealsMapping[_dealId].recruiterRating.length);
+    }
+
+    function getAggregatedRating(address _address) public view returns (uint256) {
+      uint256 gross_amount = 0;
+      uint256 gross_rating = 0;
+      uint256[] memory deal_ids = getDealsOf(_address);
+      for (uint256 i=0; i < deal_ids.length; i++) {
+        Deal memory deal = getDeal(deal_ids[i]);
+        if (_address == deal.recruiter && deal.recruiterRating.length != 0) {
+          gross_rating += getAvgRecruiterRating(deal_ids[i]) * deal.claimedAmount;
+          gross_amount += deal.claimedAmount;
+        } else if (_address == deal.creator && deal.creatorRating.length != 0) {
+          gross_rating += getAvgCreatorRating(deal_ids[i]) * (deal.claimedAmount + deal.claimableAmount);
+          gross_amount += (deal.claimedAmount + deal.claimableAmount);
+        }
+      }
+      return gross_rating / gross_amount;
     }
 
     function getTotalSuccessFee() external view returns (uint256) {
