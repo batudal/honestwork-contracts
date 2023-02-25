@@ -37,11 +37,11 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint128[] creatorRating;
     }
 
+    uint128 immutable PRECISION = 1e2;
+
     Counters.Counter public dealIds;
     IHWRegistry public registry;
-
     IUniswapV2Router01 public router;
-
     IERC20 public stableCoin;
     IPool public pool;
     uint64 public extraPaymentLimit;
@@ -277,7 +277,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             "can not go above total payment, use additional payment function pls"
         );
         if (_rating != 0) {
-            currentDeal.creatorRating.push(_rating * 100);
+            currentDeal.creatorRating.push(_rating * PRECISION);
         }
 
         uint256 grossRev = (
@@ -347,13 +347,14 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         address _paymentToken = currentDeal.paymentToken;
         currentDeal.claimedAmount += _withdrawAmount;
         currentDeal.claimableAmount -= _withdrawAmount;
-        currentDeal.recruiterRating.push(_rating * 100);
+        currentDeal.recruiterRating.push(_rating * PRECISION);
         currentDeal.successFee +=
             (_withdrawAmount * honestWorkSuccessFee) /
-            100;
+            PRECISION;
         if (_paymentToken == address(0)) {
             (bool payment, ) = payable(currentDeal.creator).call{
-                value: (_withdrawAmount * (100 - honestWorkSuccessFee)) / 100
+                value: (_withdrawAmount * (PRECISION - honestWorkSuccessFee)) /
+                    PRECISION
             }("");
             require(payment, "Failed to send payment");
         } else {
@@ -361,7 +362,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
             paymentToken.transfer(
                 msg.sender,
-                ((_withdrawAmount * (100 - honestWorkSuccessFee)) / 100)
+                ((_withdrawAmount * (PRECISION - honestWorkSuccessFee)) /
+                    PRECISION)
             );
         }
         uint256 grossRev = (
@@ -428,8 +430,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         );
         registry.setNFTGrossRevenue(_recruiterNFT, grossRev);
 
-        additionalPaymentLimit[_dealId] += 1;
-        currentDeal.creatorRating.push(_rating * 100);
+        additionalPaymentLimit[_dealId]++;
+        currentDeal.creatorRating.push(_rating * PRECISION);
 
         emit GrossRevenueUpdated(_recruiterNFT, grossRev);
         emit AdditionalPayment(_dealId, currentDeal.recruiter, _payment);
@@ -439,7 +441,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     //  view methods  //
     //----------------//
 
-    function getDeal(uint256 _dealId) external view returns (Deal memory) {
+    function getDeal(uint256 _dealId) public view returns (Deal memory) {
         return dealsMapping[_dealId];
     }
 
@@ -468,7 +470,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     function getDealCompletionRate(
         uint256 _dealId
     ) external view returns (uint256) {
-        return ((dealsMapping[_dealId].claimedAmount * 100) /
+        return ((dealsMapping[_dealId].claimedAmount * PRECISION) /
             dealsMapping[_dealId].totalPayment);
     }
 
@@ -490,7 +492,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     function getAvgCreatorRating(
         uint256 _dealId
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -504,7 +506,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
 
     function getAvgRecruiterRating(
         uint256 _dealId
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         uint256 sum;
         for (
             uint256 i = 0;
@@ -514,6 +516,33 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             sum += dealsMapping[_dealId].recruiterRating[i];
         }
         return (sum / dealsMapping[_dealId].recruiterRating.length);
+    }
+
+    function getAggregatedRating(
+        address _address
+    ) public view returns (uint256) {
+        uint256 gross_amount = 0;
+        uint256 gross_rating = 0;
+        uint256[] memory deal_ids = getDealsOf(_address);
+        for (uint256 i = 0; i < deal_ids.length; i++) {
+            Deal memory deal = getDeal(deal_ids[i]);
+            if (
+                _address == deal.recruiter && deal.recruiterRating.length != 0
+            ) {
+                gross_rating +=
+                    getAvgRecruiterRating(deal_ids[i]) *
+                    deal.claimedAmount;
+                gross_amount += deal.claimedAmount;
+            } else if (
+                _address == deal.creator && deal.creatorRating.length != 0
+            ) {
+                gross_rating +=
+                    getAvgCreatorRating(deal_ids[i]) *
+                    (deal.claimedAmount + deal.claimableAmount);
+                gross_amount += (deal.claimedAmount + deal.claimableAmount);
+            }
+        }
+        return gross_rating / gross_amount;
     }
 
     function getTotalSuccessFee() external view returns (uint256) {
@@ -581,6 +610,10 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 _tokenId
     ) public view returns (uint256) {
         return registry.getNFTGrossRevenue(_tokenId);
+    }
+
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
     }
 
     event OfferCreated(

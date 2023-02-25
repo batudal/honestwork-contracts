@@ -16,7 +16,6 @@ contract HWEscrowTest is Test {
     }
 
     Status public status;
-
     SigUtils public sigUtils;
     MockToken public token;
     MockToken public token2;
@@ -24,6 +23,8 @@ contract HWEscrowTest is Test {
     HWEscrow public hplock;
     HonestWorkNFT public hw721;
     HWRegistry public registry;
+
+    uint128 immutable PRECISION = 1e2;
 
     // binance
     address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
@@ -167,6 +168,8 @@ contract HWEscrowTest is Test {
             s
         );
         assert(x == 1);
+        uint256 precision = hplock.getPrecision();
+        assertEq(precision, PRECISION);
     }
 
     // function testWrongSignature() public {
@@ -300,6 +303,79 @@ contract HWEscrowTest is Test {
         uint256 balanceAfter = recruiter1.balance;
         assertEq(balanceAfter - balanceBefore, 10 ether);
         assertEq(hplock.getDealStatus(1), 2);
+    }
+
+    function testAggregatedRating() public {
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = hplock.createDeal{value: 10 ether}(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1,
+            v,
+            r,
+            s
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 7, nftId);
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 8, nftId);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(dealId, 5 ether, 9, nftId);
+        vm.prank(creator1);
+        hplock.claimPayment(dealId, 5 ether, 4, nftId);
+
+        bytes32 _message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0
+        );
+        bytes32 _hashedMessage = sigUtils.getEthSignedMessageHash(_message);
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(
+            creator1PrivateKey,
+            _hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 _dealId = hplock.createDeal{value: 10 ether}(
+            address(recruiter1),
+            address(creator1),
+            address(0),
+            10 ether,
+            0,
+            1,
+            _v,
+            _r,
+            _s
+        );
+        uint256 _nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(_dealId, 5 ether, 1, _nftId);
+        vm.prank(creator1);
+        hplock.claimPayment(_dealId, 5 ether, 9, _nftId);
+        vm.prank(recruiter1);
+        hplock.unlockPayment(_dealId, 5 ether, 3, _nftId);
+        vm.prank(creator1);
+        hplock.claimPayment(_dealId, 5 ether, 7, _nftId);
+
+        assertEq(hplock.getAggregatedRating(address(recruiter1)), 700);
+        assertEq(hplock.getAggregatedRating(address(creator1)), 500);
     }
 
     function testAdditionalPayment() public {
@@ -631,7 +707,7 @@ contract HWEscrowTest is Test {
         hplock.claimPayment(dealId, 8 ether, 10, nftId2);
     }
 
-    function testOverClaim2() public {
+    function testOverClaimAdditional() public {
         vm.roll(100);
         bytes32 message = sigUtils.getMessageHash(
             address(recruiter1),
