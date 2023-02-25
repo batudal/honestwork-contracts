@@ -304,7 +304,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         );
         address _paymentToken = currentDeal.paymentToken;
         uint256 amountToBeWithdrawn = currentDeal.totalPayment -
-            currentDeal.claimedAmount;
+            currentDeal.claimedAmount -
+            currentDeal.claimableAmount;
         if (_paymentToken == address(0)) {
             (bool payment, ) = payable(currentDeal.recruiter).call{
                 value: amountToBeWithdrawn
@@ -330,7 +331,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             currentDeal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
-
         require(
             _rating >= 0 && _rating <= 10,
             "rating must be between 0 and 10"
