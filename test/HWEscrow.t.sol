@@ -16,7 +16,6 @@ contract HWEscrowTest is Test {
     }
 
     Status public status;
-
     SigUtils public sigUtils;
     MockToken public token;
     MockToken public token2;
@@ -24,6 +23,8 @@ contract HWEscrowTest is Test {
     HWEscrow public hplock;
     HonestWorkNFT public hw721;
     HWRegistry public registry;
+
+    uint128 immutable PRECISION = 1e2;
 
     // binance
     address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
@@ -167,6 +168,8 @@ contract HWEscrowTest is Test {
             s
         );
         assert(x == 1);
+        uint256 precision = hplock.getPrecision();
+        assertEq(precision, PRECISION);
     }
 
     // function testWrongSignature() public {
