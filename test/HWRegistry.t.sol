@@ -36,13 +36,13 @@ contract HWRegistryTest is Test {
 
     function testAddWhitelist(address _address) public {
         vm.prank(deployer);
-        registry.addWhitelisted(_address, 1000 ether);
+        registry.addToWhitelist(_address, 1000 ether);
         assertEq(registry.isWhitelisted(_address), true);
     }
 
     function testAddWhitelistWithToken() public {
         vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
+        registry.addToWhitelist(address(token), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         assertEq(registry.isWhitelisted(address(token)), true);
         assertEq(registry.isAllowedAmount(address(token), 1500 ether), false);
@@ -51,11 +51,11 @@ contract HWRegistryTest is Test {
 
     function testUpdateWhitelisted() public {
         vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
+        registry.addToWhitelist(address(token), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         assertEq(registry.isAllowedAmount(address(token), 1500 ether), false);
         assertEq(registry.isAllowedAmount(address(token), 500 ether), true);
-        registry.updateWhitelisted(address(token), 1500 ether);
+        registry.updateWhitelist(address(token), 1500 ether);
         assertEq(registry.isAllowedAmount(address(token), 1500 ether), true);
         assertEq(registry.isAllowedAmount(address(token), 500 ether), true);
         assertEq(registry.isAllowedAmount(address(token), 2000 ether), false);
@@ -64,7 +64,7 @@ contract HWRegistryTest is Test {
     function testAddWhitelist(address _adress, uint256 _amount) public {
         vm.assume(_amount < 1000000000 ether);
         vm.prank(deployer);
-        registry.addWhitelisted(_adress, _amount);
+        registry.addToWhitelist(_adress, _amount);
         assertEq(registry.isWhitelisted(_adress), true);
         assertEq(registry.isAllowedAmount(_adress, _amount), true);
         assertEq(registry.isAllowedAmount(_adress, _amount + 1), false);
@@ -72,10 +72,10 @@ contract HWRegistryTest is Test {
 
     function testRemoveWhitelisted() public {
         vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
+        registry.addToWhitelist(address(token), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         vm.prank(deployer);
-        registry.removeWhitelisted(address(token));
+        registry.removeFromWhitelist(address(token));
         assertEq(registry.isWhitelisted(address(token)), false);
     }
 }

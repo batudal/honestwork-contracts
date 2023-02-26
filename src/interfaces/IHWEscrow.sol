@@ -21,6 +21,32 @@ interface IHWEscrow {
         uint128[] creatorRating;
     }
 
+    //-----------------//
+    //  admin methods  //
+    //-----------------//
+
+    function changeSuccessFee(uint128 _fee) external;
+
+    function changeRegistry(IHWRegistry _registry) external;
+
+    function claimSuccessFee(uint256 _dealId, address _feeCollector) external;
+
+    function claimTotalSuccessFee(address _feeCollector) external;
+
+    function changeExtraPaymentLimit(uint64 _limit) external;
+
+    function allowNativePayment(bool _bool) external;
+
+    function setStableCoin(address _stableCoin) external;
+
+    function setRouter(address _router) external;
+
+    function setPool(address _pool) external;
+
+    //--------------------//
+    //  mutative methods  //
+    //--------------------//
+
     function createDealSignature(
         address _recruiter,
         address _creator,
@@ -66,33 +92,13 @@ interface IHWEscrow {
         uint128 _rating
     ) external payable;
 
+    //----------------//
+    //  view methods  //
+    //----------------//
+
     function getDeal(uint256 _dealId) external view returns (Deal memory);
 
-    function getCreator(uint256 _dealId) external view returns (address);
-
-    function getRecruiter(uint256 _dealId) external view returns (address);
-
-    function getPaymentToken(uint256 _dealId) external view returns (address);
-
-    function getclaimedAmount(uint256 _dealId) external view returns (uint256);
-
-    function getClaimableAmount(
-        uint256 _dealId
-    ) external view returns (uint256);
-
-    function getDealCompletionRate(
-        uint256 _dealId
-    ) external view returns (uint256);
-
-    function getTotalPayment(uint256 _dealId) external view returns (uint256);
-
-    function getRecruiterRating(
-        uint256 _dealId
-    ) external view returns (uint128[] memory);
-
-    function getCreatorRating(
-        uint256 _dealId
-    ) external view returns (uint128[] memory);
+    function getPrecision() external pure returns (uint256);
 
     function getAvgCreatorRating(
         uint256 _dealId
@@ -102,11 +108,11 @@ interface IHWEscrow {
         uint256 _dealId
     ) external view returns (uint256);
 
+    function getAggregatedRating(
+        address _address
+    ) external view returns (uint256);
+
     function getTotalSuccessFee() external view returns (uint256);
-
-    function getDealSuccessFee(uint256 _dealId) external view returns (uint256);
-
-    function getDealStatus(uint256 _dealId) external view returns (uint256);
 
     function getAdditionalPaymentLimit(
         uint256 _dealId
@@ -116,21 +122,5 @@ interface IHWEscrow {
         address _address
     ) external view returns (uint256[] memory);
 
-    function changeSuccessFee(uint128 _fee) external;
-
-    function changeRegistry(IHWRegistry _registry) external;
-
-    function claimSuccessFee(uint256 _dealId, address _feeCollector) external;
-
-    function claimTotalSuccessFee(address _feeCollector) external;
-
-    function changeExtraPaymentLimit(uint64 _limit) external;
-
-    function allowNativePayment(bool _bool) external;
-
-    function getEthPrice(uint256 _amount) external view returns (uint256);
-
-    function getNFTGrossRevenue(
-        uint256 _tokenId
-    ) external view returns (uint256);
+    function getAllDeals() external view returns (Deal[] memory);
 }

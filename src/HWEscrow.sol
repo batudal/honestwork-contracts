@@ -444,49 +444,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         return dealsMapping[_dealId];
     }
 
-    function getCreator(uint256 _dealId) external view returns (address) {
-        return dealsMapping[_dealId].creator;
-    }
-
-    function getRecruiter(uint256 _dealId) external view returns (address) {
-        return dealsMapping[_dealId].recruiter;
-    }
-
-    function getPaymentToken(uint256 _dealId) external view returns (address) {
-        return dealsMapping[_dealId].paymentToken;
-    }
-
-    function getclaimedAmount(uint256 _dealId) external view returns (uint256) {
-        return dealsMapping[_dealId].claimedAmount;
-    }
-
-    function getClaimableAmount(
-        uint256 _dealId
-    ) external view returns (uint256) {
-        return dealsMapping[_dealId].claimableAmount;
-    }
-
-    function getDealCompletionRate(
-        uint256 _dealId
-    ) external view returns (uint256) {
-        return ((dealsMapping[_dealId].claimedAmount * PRECISION) /
-            dealsMapping[_dealId].totalPayment);
-    }
-
-    function getTotalPayment(uint256 _dealId) external view returns (uint256) {
-        return (dealsMapping[_dealId].totalPayment);
-    }
-
-    function getRecruiterRating(
-        uint256 _dealId
-    ) external view returns (uint128[] memory) {
-        return (dealsMapping[_dealId].recruiterRating);
-    }
-
-    function getCreatorRating(
-        uint256 _dealId
-    ) external view returns (uint128[] memory) {
-        return (dealsMapping[_dealId].creatorRating);
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
     }
 
     function getAvgCreatorRating(
@@ -556,16 +515,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         return totalSuccessFee;
     }
 
-    function getDealSuccessFee(
-        uint256 _dealId
-    ) external view returns (uint256) {
-        return dealsMapping[_dealId].successFee;
-    }
-
-    function getDealStatus(uint256 _dealId) external view returns (uint256) {
-        return uint256(dealsMapping[_dealId].status);
-    }
-
     function getAdditionalPaymentLimit(
         uint256 _dealId
     ) external view returns (uint256) {
@@ -589,6 +538,21 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         return deals;
     }
 
+    function getAllDeals() public view returns (Deal[] memory) {
+        Deal[] memory deals = new Deal[](dealIds.current());
+        for (uint256 i = 0; i < dealIds.current(); i++) {
+            deals[i] = dealsMapping[i];
+        }
+        return deals;
+    }
+
+    function getEthPrice(uint256 _amount) internal view returns (uint256) {
+        uint256 reserve1;
+        uint256 reserve2;
+        (reserve1, reserve2, ) = pool.getReserves();
+        return router.quote(_amount, reserve1, reserve2);
+    }
+
     function getDealsCount(address _address) internal view returns (uint256) {
         uint256 count;
         for (uint256 i = 0; i <= dealIds.current(); i++) {
@@ -600,23 +564,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             }
         }
         return count;
-    }
-
-    function getEthPrice(uint256 _amount) public view returns (uint256) {
-        uint256 reserve1;
-        uint256 reserve2;
-        (reserve1, reserve2, ) = pool.getReserves();
-        return router.quote(_amount, reserve1, reserve2);
-    }
-
-    function getNFTGrossRevenue(
-        uint256 _tokenId
-    ) public view returns (uint256) {
-        return registry.getNFTGrossRevenue(_tokenId);
-    }
-
-    function getPrecision() external pure returns (uint256) {
-        return PRECISION;
     }
 
     event OfferCreated(

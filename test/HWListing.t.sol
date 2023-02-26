@@ -17,6 +17,14 @@ contract HWListingTest is Test {
 
     uint256 bscFork;
 
+    // binance
+    address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
+    address public constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+    address public constant ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
+    IUniswapV2Router01 public router;
+    IERC20 public stableCoin;
+    IPool public pool;
+
     HWRegistry public registry;
     HWListing public listing;
     MockToken public token;
@@ -42,6 +50,10 @@ contract HWListingTest is Test {
         token2 = new MockToken("MCK", "MOCK");
         token3 = new MockToken("MCK", "MOCK");
 
+        pool = IPool(POOL);
+        stableCoin = IERC20(BUSD);
+        router = IUniswapV2Router01(ROUTER);
+
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
         creator1 = vm.addr(3);
@@ -54,8 +66,6 @@ contract HWListingTest is Test {
         token.transfer(address(recruiter1), 1 ether);
         token2.transfer(address(recruiter2), 2 ether);
         token3.transfer(address(creator2), 3 ether);
-
-        //console.log(x);
     }
 
     function testSetup() public {
@@ -64,9 +74,9 @@ contract HWListingTest is Test {
         assertEq(token.balanceOf(address(recruiter1)), 1e18);
     }
 
-    function testAddWhitelist() public {
+    function testAddToWhitelist() public {
         vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
+        registry.addToWhitelist(address(token), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         vm.prank(recruiter1);
         token.approve(address(listing), 2 ether);
@@ -92,42 +102,36 @@ contract HWListingTest is Test {
         vm.selectFork(bscFork);
         assertEq(vm.activeFork(), bscFork);
         vm.prank(deployer);
-        registry.addWhitelisted(address(0), 1000 ether);
+        registry.addToWhitelist(address(0), 1000 ether);
         assertEq(registry.isWhitelisted(address(0)), true);
         vm.prank(recruiter1);
         listing.payForListingEth{value: 1 ether}(200 ether, 100);
         assert(listing.getTokenBalance() > 200 ether);
-        //console.log(listing.getTokenBalance());
         vm.prank(deployer);
-        listing.withdrawAllEarnings(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        listing.withdrawToken(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
         assertEq(token.balanceOf(address(listing)), 0 ether);
     }
 
     function testWithdrawAll() public {
         vm.prank(deployer);
-        registry.addWhitelisted(address(token), 1000 ether);
-        registry.addWhitelisted(address(token2), 1000 ether);
-        registry.addWhitelisted(address(token3), 1000 ether);
-        registry.addWhitelisted(address(0), 1000 ether);
+        registry.addToWhitelist(address(token), 1000 ether);
+        registry.addToWhitelist(address(token2), 1000 ether);
+        registry.addToWhitelist(address(token3), 1000 ether);
+        registry.addToWhitelist(address(0), 1000 ether);
         assertEq(registry.isWhitelisted(address(token)), true);
         assertEq(registry.isWhitelisted(address(token2)), true);
         assertEq(registry.isWhitelisted(address(token3)), true);
 
         vm.prank(recruiter1);
         token.approve(address(listing), 1 ether);
-
         vm.prank(recruiter2);
         token2.approve(address(listing), 2 ether);
-
         vm.prank(creator2);
         token3.approve(address(listing), 3 ether);
-
         vm.prank(recruiter1);
         listing.payForListing(address(token), 1 ether);
-
         vm.prank(recruiter2);
         listing.payForListing(address(token2), 1 ether);
-
         vm.prank(creator2);
         listing.payForListing(address(token3), 1 ether);
 
@@ -136,7 +140,7 @@ contract HWListingTest is Test {
         assertEq(token3.balanceOf(address(listing)), 1 ether);
 
         vm.prank(deployer);
-        listing.withdrawAllTokens();
+        listing.withdrawToken();
         assertEq(token.balanceOf(address(listing)), 0 ether);
         assertEq(token2.balanceOf(address(listing)), 0 ether);
         assertEq(token3.balanceOf(address(listing)), 0 ether);
@@ -144,6 +148,13 @@ contract HWListingTest is Test {
 
     function testgetEthPrice() public {
         vm.prank(deployer);
-        assert(listing.getEthPrice(1 ether) > 250 ether);
+        assert(getEthPrice(1 ether) > 250 ether);
+    }
+
+    function getEthPrice(uint256 _amount) internal view returns (uint256) {
+        uint256 reserve1;
+        uint256 reserve2;
+        (reserve1, reserve2, ) = pool.getReserves();
+        return router.quote(_amount, reserve1, reserve2);
     }
 }
