@@ -26,7 +26,6 @@ contract HWEscrowTest is Test {
 
     uint128 immutable PRECISION = 1e2;
 
-    // binance
     address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
     address public constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address public constant ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
