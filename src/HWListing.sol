@@ -50,31 +50,28 @@ contract HWListing is Ownable {
         registry = IHWRegistry(_registry);
     }
 
-    function withdrawEarnings(
-        address _token,
-        uint256 _amount
-    ) external onlyOwner {
+    function withdrawToken(address _token, uint256 _amount) external onlyOwner {
         IERC20(_token).transfer(msg.sender, _amount);
     }
 
-    function withdrawAllEarnings(address _token) external onlyOwner {
+    function withdrawToken(address _token) external onlyOwner {
         IERC20(_token).transfer(
             msg.sender,
             IERC20(_token).balanceOf(address(this))
         );
     }
 
-    function withdrawAllEarningsEth() external onlyOwner {
+    function withdrawETH() external onlyOwner {
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    function withdrawAllTokens() external onlyOwner {
+    function withdrawToken() external onlyOwner {
         uint256 counter = registry.counter();
         for (uint256 i = 0; i < counter; i++) {
-            if (registry.allWhitelisted()[i].token != address(0)) {
-                IERC20(registry.allWhitelisted()[i].token).transfer(
+            if (registry.getWhitelist()[i].token != address(0)) {
+                IERC20(registry.getWhitelist()[i].token).transfer(
                     msg.sender,
-                    IERC20(registry.allWhitelisted()[i].token).balanceOf(
+                    IERC20(registry.getWhitelist()[i].token).balanceOf(
                         address(this)
                     )
                 );
@@ -133,15 +130,15 @@ contract HWListing is Ownable {
         return payments[_user][payments[_user].length - 1];
     }
 
-    function getEthPrice(uint256 _amount) external view returns (uint) {
+    function getTokenBalance() external view returns (uint) {
+        return stableCoin.balanceOf(address(this));
+    }
+
+    function getEthPrice(uint256 _amount) internal view returns (uint) {
         uint256 reserve1;
         uint256 reserve2;
         (reserve1, reserve2, ) = pool.getReserves();
         return router.quote(_amount, reserve1, reserve2);
-    }
-
-    function getTokenBalance() external view returns (uint) {
-        return stableCoin.balanceOf(address(this));
     }
 
     event PaymentAdded(address indexed _token, uint256 _amount);

@@ -8,13 +8,23 @@ interface IHWListing {
         uint256 listingDate;
     }
 
-    function getPayments(
-        address _user
-    ) external view returns (Payment[] memory);
+    //-----------------//
+    //  admin methods  //
+    //-----------------//
 
-    function getLatestPayment(
-        address _user
-    ) external view returns (Payment memory);
+    function updateRegistry(address _registry) external;
+
+    function withdrawToken(address _token, uint256 _amount) external;
+
+    function withdrawToken(address _token) external;
+
+    function withdrawETH() external;
+
+    function withdrawToken() external;
+
+    //--------------------//
+    //  mutative methods  //
+    //--------------------//
 
     function payForListing(address _token, uint256 _amount) external;
 
@@ -23,17 +33,17 @@ interface IHWListing {
         uint256 _allowedDelay
     ) external payable returns (uint[] memory);
 
-    function withdrawEarnings(address _token, uint256 _amount) external;
+    //----------------//
+    //  view methods  //
+    //----------------//
 
-    function withdrawAllEarnings(address _token) external;
+    function getPayments(
+        address _user
+    ) external view returns (Payment[] memory);
 
-    function withdrawAllEarningsEth() external;
-
-    function withdrawAllTokens() external;
-
-    function getEthPrice(uint256 _amount) external view returns (uint);
-
-    function updateRegistry(address _registry) external;
+    function getLatestPayment(
+        address _user
+    ) external view returns (Payment memory);
 
     function getTokenBalance() external view returns (uint);
 }
