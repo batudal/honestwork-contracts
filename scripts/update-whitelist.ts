@@ -26,10 +26,8 @@ const main = async () => {
   await updateNotionPages(notion_client, response);
   redis_client.close();
 };
-const updateDB = async (redis_client: redis_Client, key: string, items: any) => {
-  for (let i = 0; i < items.length; i++) {
-    await redis_client.execute(["RPUSH", key, items[i]]);
-  }
+const updateDB = async (redis_client: redis_Client, key: string, queue: string[]) => {
+  await redis_client.execute(["JSON.SET", key, "$", JSON.stringify(queue)]);
 };
 const updateNotionPages = async (notion_client: notion_Client, response: QueryDatabaseResponse) => {
   for (let i = 0; i < response.results.length; i++) {

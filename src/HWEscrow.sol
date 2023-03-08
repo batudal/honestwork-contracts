@@ -151,6 +151,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 _totalPayment,
         uint256 _downPayment,
         uint256 _recruiterNFTId,
+        uint256 _jobId,
         bytes memory _signature
     ) external payable returns (uint256) {
         (bytes32 r, bytes32 s, uint8 v) = SigUtils.splitSignature(_signature);
@@ -162,6 +163,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
                 _totalPayment,
                 _downPayment,
                 _recruiterNFTId,
+                _jobId,
                 v,
                 r,
                 s
@@ -175,6 +177,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 _totalPayment,
         uint256 _downPayment,
         uint256 _recruiterNFTId,
+        uint256 _jobId,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -197,7 +200,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
                 _creator,
                 _paymentToken,
                 _totalPayment,
-                _downPayment
+                _downPayment,
+                _jobId
             )
         );
 
@@ -211,10 +215,9 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             "the token you are trying to pay with is either not whitelisted or you are exceeding the allowed amount"
         );
         dealIds.increment();
-        uint256 _dealId = dealIds.current();
         uint128[] memory arr1;
         uint128[] memory arr2;
-        dealsMapping[_dealId] = Deal(
+        dealsMapping[dealIds.current()] = Deal(
             _recruiter,
             _creator,
             _paymentToken,
@@ -242,9 +245,9 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken);
 
         if (_downPayment != 0) {
-            unlockPayment(_dealId, _downPayment, 0, _recruiterNFTId);
+            unlockPayment(dealIds.current(), _downPayment, 0, _recruiterNFTId);
         }
-        return _dealId;
+        return dealIds.current();
     }
 
     function unlockPayment(

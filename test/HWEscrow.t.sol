@@ -151,6 +151,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -167,6 +168,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -182,6 +184,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -197,6 +200,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -223,6 +227,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -238,6 +243,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -265,6 +271,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -280,6 +287,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -298,6 +306,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -313,6 +322,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -334,6 +344,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 _hashedMessage = sigUtils.getEthSignedMessageHash(_message);
@@ -349,6 +360,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             _v,
             _r,
             _s
@@ -375,6 +387,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -390,6 +403,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -425,6 +439,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -440,6 +455,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -471,6 +487,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -486,6 +503,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -533,6 +551,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             20 ether,
+            0,
             0
         );
         (v, r, s) = vm.sign(creator1PrivateKey, message);
@@ -545,6 +564,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -560,6 +580,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -580,6 +601,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -595,6 +617,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -619,6 +642,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -634,6 +658,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -661,6 +686,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(0),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -675,6 +701,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -711,6 +738,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -726,6 +754,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -755,6 +784,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -770,6 +800,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -810,6 +841,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -827,6 +859,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -862,6 +895,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -881,6 +915,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -905,6 +940,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -920,6 +956,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
@@ -945,6 +982,7 @@ contract HWEscrowTest is Test {
             address(creator1),
             address(token),
             10 ether,
+            0,
             0
         );
         bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
@@ -960,6 +998,7 @@ contract HWEscrowTest is Test {
             10 ether,
             0,
             1,
+            0,
             v,
             r,
             s
