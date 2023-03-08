@@ -2,6 +2,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-preprocessor";
 import fs from "fs";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: "0.8.18",
@@ -23,6 +25,16 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./src",
     cache: "./cache_hardhat",
+  },
+  networks: {
+    mainnet: {
+      url: process.env.MAINNET_URL || "",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    binance: {
+      url: process.env.BINANCE_URL || "",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
   },
 };
 
