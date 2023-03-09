@@ -31,6 +31,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 successFee;
         uint256 claimedAmount;
         uint256 claimableAmount;
+        uint256 jobId;
         Status status;
         uint128[] recruiterRating;
         uint128[] creatorRating;
@@ -225,6 +226,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             0,
             0,
             0,
+            _jobId,
             Status.OfferInitiated,
             arr1,
             arr2
