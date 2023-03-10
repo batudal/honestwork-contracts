@@ -23,7 +23,8 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "hardhat": "^2.13.0",
-    "hardhat-preprocessor": "^0.1.5"
+    "hardhat-preprocessor": "^0.1.5",
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.3",
