@@ -17,13 +17,15 @@ const main = async () => {
   const response = await notion_client.databases.query({ database_id: process.env.NOTION_DATABASE_ID! });
   for (let i = 0; i < response.results.length; i++) {
     const page_response: any = await notion_client.pages.retrieve({ page_id: response.results[i].id });
-    if (page_response.properties.Status.select.name === "Queued") {
-      queue.push(page_response.properties.Address.title[0].plain_text);
-    }
+    queue.push(page_response.properties.Address.title[0].plain_text);
   }
-  // await updateContract(queue);
+  console.log("Queue: ", queue);
+  await updateContract(queue);
+  console.log("Updated contract.");
   await updateDB(redis_client, "whitelist", queue);
+  console.log("Updated db.");
   await updateNotionPages(notion_client, response);
+  console.log("Updated notion.");
   redis_client.close();
 };
 const updateDB = async (redis_client: redis_Client, key: string, queue: string[]) => {
@@ -31,7 +33,7 @@ const updateDB = async (redis_client: redis_Client, key: string, queue: string[]
 };
 const updateNotionPages = async (notion_client: notion_Client, response: QueryDatabaseResponse) => {
   for (let i = 0; i < response.results.length; i++) {
-    const update_response = await notion_client.pages.update({
+    await notion_client.pages.update({
       page_id: response.results[i].id,
       properties: {
         Status: {
@@ -46,11 +48,12 @@ const updateNotionPages = async (notion_client: notion_Client, response: QueryDa
   }
 };
 const updateContract = async (queue: string[]) => {
-  const NFTContract = await ethers.getContractFactory("NFT");
+  const NFTContract = await ethers.getContractFactory("HonestWorkNFT");
   const contract = NFTContract.attach(process.env.HONESTWORK_NFT_ADDRESS!);
   const leaves = queue.map((address) => keccak256(address));
   const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
   const root = tree.getHexRoot();
+  console.log("Root: ", root);
   const tx = await contract.setWhitelistRoot(root);
   console.log("Transaction hash: ", tx.hash);
   await tx.wait();
