@@ -35,6 +35,10 @@ const config: HardhatUserConfig = {
       url: process.env.BINANCE_URL || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    arbitrum: {
+      url: process.env.ARBITRUM_URL || "",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
   },
 };
 

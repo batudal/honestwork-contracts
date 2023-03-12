@@ -4,18 +4,15 @@ pragma solidity ^0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IHWRegistry.sol";
 import "./interfaces/IHWRegistry.sol";
-import "./interfaces/IUniswapV2Router01.sol";
-import "./interfaces/IPool.sol";
 import "./utils/SigUtils.sol";
 
 /// @title HonestWork Escrow Contract
 /// @author @takez0_o, @ReddKidd
 /// @notice Escrow contract for HonestWork
 /// @dev Facilitates deals between creators and recruiters
-contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
+contract HWEscrow is Ownable, SigUtils {
     using Counters for Counters.Counter;
 
     enum Status {
@@ -28,7 +25,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         address creator;
         address paymentToken;
         uint256 totalPayment;
-        uint256 successFee;
+        uint256 hwProfit;
         uint256 claimedAmount;
         uint256 claimableAmount;
         uint256 jobId;
@@ -38,31 +35,22 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     }
 
     uint128 immutable PRECISION = 1e2;
+    uint128 immutable RATING_UPPER = 11;
+    uint128 immutable RATING_LOWER = 0;
 
     Counters.Counter public dealIds;
     IHWRegistry public registry;
-    IUniswapV2Router01 public router;
-    IERC20 public stableCoin;
-    IPool public pool;
     uint64 public extraPaymentLimit;
-    uint128 public honestWorkSuccessFee;
+    uint128 public successFee;
     bool public nativePaymentAllowed;
-    uint256 public totalCollectedSuccessFee;
+    uint256 public profits;
 
     mapping(uint256 => uint256) public additionalPaymentLimit;
-    mapping(uint256 => Deal) public dealsMapping;
+    mapping(uint256 => Deal) public dealsMap;
 
-    constructor(
-        address _registry,
-        address _pool,
-        address _stableCoin,
-        address _router
-    ) Ownable() {
-        honestWorkSuccessFee = 5;
+    constructor(address _registry, uint128 _fee) Ownable() {
+        successFee = _fee;
         registry = IHWRegistry(_registry);
-        pool = IPool(_pool);
-        stableCoin = IERC20(_stableCoin);
-        router = IUniswapV2Router01(_router);
     }
 
     //-----------------//
@@ -73,7 +61,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
      * @dev value is expressed as a percentage.
      */
     function changeSuccessFee(uint128 _fee) external onlyOwner {
-        honestWorkSuccessFee = _fee;
+        successFee = _fee;
         emit FeeChanged(_fee);
     }
 
@@ -81,40 +69,28 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         registry = _registry;
     }
 
-    function claimSuccessFee(
+    function claimProfit(
         uint256 _dealId,
         address _feeCollector
     ) external onlyOwner {
-        uint256 successFee = dealsMapping[_dealId].successFee;
+        uint256 profit = dealsMap[_dealId].hwProfit;
 
-        if (dealsMapping[_dealId].paymentToken != address(0)) {
-            IERC20 paymentToken = IERC20(dealsMapping[_dealId].paymentToken);
-            paymentToken.transfer(_feeCollector, successFee);
-        } else {
-            (bool payment, ) = payable(_feeCollector).call{value: successFee}(
-                ""
-            );
-            require(payment, "payment failed");
-        }
-        totalCollectedSuccessFee += successFee;
-        dealsMapping[_dealId].successFee = 0;
-        emit FeeClaimed(_dealId, dealsMapping[_dealId].successFee);
+        IERC20(dealsMap[_dealId].paymentToken).transfer(_feeCollector, profit);
+
+        profits += profit;
+        dealsMap[_dealId].hwProfit = 0;
+        emit FeeClaimed(_dealId, dealsMap[_dealId].hwProfit);
     }
 
-    function claimTotalSuccessFee(address _feeCollector) external onlyOwner {
+    function claimProfits(address _feeCollector) external onlyOwner {
         for (uint256 i = 1; i <= dealIds.current(); i++) {
-            uint256 successFee = dealsMapping[i].successFee;
-            if (successFee > 0) {
-                if (dealsMapping[i].paymentToken == address(0)) {
-                    (bool payment, ) = payable(_feeCollector).call{
-                        value: successFee
-                    }("");
-                    require(payment, "payment failed");
-                } else {
-                    IERC20 paymentToken = IERC20(dealsMapping[i].paymentToken);
-                    paymentToken.transfer(_feeCollector, successFee);
-                }
-                dealsMapping[i].successFee = 0;
+            uint256 profit = dealsMap[i].hwProfit;
+            if (profit > 0) {
+                IERC20(dealsMap[i].paymentToken).transfer(
+                    _feeCollector,
+                    profit
+                );
+                dealsMap[i].hwProfit = 0;
             }
         }
         emit TotalFeeClaimed(_feeCollector);
@@ -123,22 +99,6 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     function changeExtraPaymentLimit(uint64 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit ExtraLimitChanged(_limit);
-    }
-
-    function allowNativePayment(bool _bool) external onlyOwner {
-        nativePaymentAllowed = _bool;
-    }
-
-    function setStableCoin(address _stableCoin) external onlyOwner {
-        stableCoin = IERC20(_stableCoin);
-    }
-
-    function setRouter(address _router) external onlyOwner {
-        router = IUniswapV2Router01(_router);
-    }
-
-    function setPool(address _pool) external onlyOwner {
-        pool = IPool(_pool);
     }
 
     //--------------------//
@@ -154,7 +114,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 _recruiterNFTId,
         uint256 _jobId,
         bytes memory _signature
-    ) external payable returns (uint256) {
+    ) external returns (uint256) {
         (bytes32 r, bytes32 s, uint8 v) = SigUtils.splitSignature(_signature);
         return
             createDeal(
@@ -182,18 +142,22 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable returns (uint256) {
+    ) public returns (uint256) {
         require(_recruiter != address(0), "recruiter address cannot be 0");
         require(_creator != address(0), "creator address cannot be 0");
         require(_totalPayment > 0, "total payment cannot be 0");
         require(
+            _downPayment <= _totalPayment,
+            "down payment cannot be greater than total payment"
+        );
+        require(
             _creator != _recruiter,
             "creator and recruiter cannot be the same address"
         );
-
-        if (_paymentToken == address(0)) {
-            require(nativePaymentAllowed, "native payment is not allowed");
-        }
+        require(
+            registry.isAllowedAmount(_paymentToken, _totalPayment),
+            "wrong amount for payment token"
+        );
 
         bytes32 signedMessage = getEthSignedMessageHash(
             getMessageHash(
@@ -205,20 +169,13 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
                 _jobId
             )
         );
-
         require(
             recoverSigner(signedMessage, v, r, s) == _creator,
             "invalid signature, creator needs to sign the deal paramers first"
         );
 
-        require(
-            registry.isAllowedAmount(_paymentToken, _totalPayment),
-            "the token you are trying to pay with is either not whitelisted or you are exceeding the allowed amount"
-        );
         dealIds.increment();
-        uint128[] memory arr1;
-        uint128[] memory arr2;
-        dealsMapping[dealIds.current()] = Deal(
+        dealsMap[dealIds.current()] = Deal(
             _recruiter,
             _creator,
             _paymentToken,
@@ -228,26 +185,27 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
             0,
             _jobId,
             Status.OfferInitiated,
-            arr1,
-            arr2
+            new uint128[](0),
+            new uint128[](0)
         );
-        if (_paymentToken == address(0)) {
-            require(
-                msg.value >= _totalPayment,
-                "employer should deposit the payment"
-            );
-        } else {
-            IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.transferFrom(
-                msg.sender,
-                address(this),
-                (_totalPayment)
-            );
-        }
+
+        IERC20(_paymentToken).transferFrom(
+            msg.sender,
+            address(this),
+            (_totalPayment * (PRECISION + successFee)) / PRECISION
+        );
         emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken);
 
         if (_downPayment != 0) {
-            unlockPayment(dealIds.current(), _downPayment, 0, _recruiterNFTId);
+            dealsMap[dealIds.current()].claimableAmount += _downPayment;
+            emit PaymentUnlocked(
+                dealIds.current(),
+                dealsMap[dealIds.current()].recruiter,
+                _downPayment
+            );
+
+            registry.setNFTGrossRevenue(_recruiterNFTId, _downPayment);
+            emit GrossRevenueUpdated(_recruiterNFTId, _downPayment);
         }
         return dealIds.current();
     }
@@ -258,187 +216,97 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint128 _rating,
         uint256 _recruiterNFT
     ) public {
-        Deal storage currentDeal = dealsMapping[_dealId];
+        Deal memory deal = dealsMap[_dealId];
         require(
-            currentDeal.status == Status.OfferInitiated,
+            deal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
         require(
-            _rating >= 0 && _rating <= 10,
-            "rating must be between 0 and 10"
+            _rating > RATING_LOWER && _rating < RATING_UPPER,
+            "rating must be between 1 and 10"
         );
         require(
-            currentDeal.recruiter == msg.sender,
+            deal.recruiter == msg.sender,
             "only recruiter can unlock payments"
         );
-
-        currentDeal.claimableAmount += _paymentAmount;
-        address _paymentToken = currentDeal.paymentToken;
-
         require(
-            currentDeal.totalPayment >=
-                currentDeal.claimableAmount + currentDeal.claimedAmount,
-            "can not go above total payment, use additional payment function pls"
+            deal.totalPayment >=
+                deal.claimableAmount + deal.claimedAmount + _paymentAmount,
+            "can not go above total payment, "
         );
+
+        dealsMap[_dealId].claimableAmount += _paymentAmount;
+        emit PaymentUnlocked(_dealId, deal.recruiter, _paymentAmount);
+
         if (_rating != 0) {
-            currentDeal.creatorRating.push(_rating * PRECISION);
+            dealsMap[_dealId].creatorRating.push(_rating);
         }
-
-        uint256 grossRev = (
-            _paymentToken == address(0)
-                ? getEthPrice(_paymentAmount)
-                : _paymentAmount
-        );
-
-        registry.setNFTGrossRevenue(_recruiterNFT, grossRev);
-
-        emit GrossRevenueUpdated(_recruiterNFT, grossRev);
-        emit PaymentUnlocked(_dealId, currentDeal.recruiter, _paymentAmount);
+        registry.setNFTGrossRevenue(_recruiterNFT, _paymentAmount);
+        emit GrossRevenueUpdated(_recruiterNFT, _paymentAmount);
     }
 
     function withdrawPayment(uint256 _dealId) external {
-        Deal storage currentDeal = dealsMapping[_dealId];
+        Deal memory deal = dealsMap[_dealId];
+        require(deal.status == Status.OfferInitiated, "job should be active");
         require(
-            currentDeal.status == Status.OfferInitiated,
-            "job should be active"
-        );
-        require(
-            currentDeal.recruiter == msg.sender,
+            deal.recruiter == msg.sender,
             "only recruiter can withdraw payments"
         );
-        address _paymentToken = currentDeal.paymentToken;
-        uint256 amountToBeWithdrawn = currentDeal.totalPayment -
-            currentDeal.claimedAmount -
-            currentDeal.claimableAmount;
-        if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(currentDeal.recruiter).call{
-                value: amountToBeWithdrawn
-            }("");
-            require(payment, "Failed to send payment");
-        } else {
-            IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.transfer(msg.sender, (amountToBeWithdrawn));
-        }
 
-        currentDeal.status = Status.JobCancelled;
-        emit PaymentWithdrawn(_dealId, currentDeal.status);
+        IERC20(deal.paymentToken).transfer(
+            msg.sender,
+            ((deal.totalPayment * (PRECISION + successFee)) /
+                PRECISION -
+                deal.claimedAmount -
+                deal.claimableAmount -
+                deal.hwProfit)
+        );
+        dealsMap[_dealId].status = Status.JobCancelled;
+        emit PaymentWithdrawn(_dealId, deal.status);
     }
 
     function claimPayment(
         uint256 _dealId,
-        uint256 _withdrawAmount,
+        uint256 _claimAmount,
         uint128 _rating,
         uint256 _creatorNFT
     ) external {
-        Deal storage currentDeal = dealsMapping[_dealId];
+        Deal memory deal = dealsMap[_dealId];
         require(
-            currentDeal.status == Status.OfferInitiated,
+            deal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
         );
         require(
-            _rating >= 0 && _rating <= 10,
+            _rating > RATING_LOWER && _rating < RATING_UPPER,
             "rating must be between 0 and 10"
         );
         require(
-            currentDeal.creator == msg.sender,
+            deal.creator == msg.sender,
             "only creator can receive payments"
         );
         require(
-            currentDeal.claimableAmount >= _withdrawAmount,
+            deal.claimableAmount >= _claimAmount,
             "desired payment is not available yet"
         );
 
-        address _paymentToken = currentDeal.paymentToken;
-        currentDeal.claimedAmount += _withdrawAmount;
-        currentDeal.claimableAmount -= _withdrawAmount;
-        currentDeal.recruiterRating.push(_rating * PRECISION);
-        currentDeal.successFee +=
-            (_withdrawAmount * honestWorkSuccessFee) /
-            PRECISION;
-        if (_paymentToken == address(0)) {
-            (bool payment, ) = payable(currentDeal.creator).call{
-                value: (_withdrawAmount * (PRECISION - honestWorkSuccessFee)) /
-                    PRECISION
-            }("");
-            require(payment, "Failed to send payment");
-        } else {
-            IERC20 paymentToken = IERC20(_paymentToken);
+        deal.claimedAmount += _claimAmount;
+        deal.claimableAmount -= _claimAmount;
+        deal.hwProfit += (_claimAmount * successFee) / PRECISION;
 
-            paymentToken.transfer(
-                msg.sender,
-                ((_withdrawAmount * (PRECISION - honestWorkSuccessFee)) /
-                    PRECISION)
-            );
+        IERC20(deal.paymentToken).transfer(
+            msg.sender,
+            ((_claimAmount * (PRECISION - successFee)) / PRECISION)
+        );
+
+        registry.setNFTGrossRevenue(_creatorNFT, _claimAmount);
+        emit GrossRevenueUpdated(_creatorNFT, _claimAmount);
+
+        if (deal.claimedAmount >= deal.totalPayment) {
+            deal.status = Status.JobCompleted;
         }
-        uint256 grossRev = (
-            _paymentToken == address(0)
-                ? getEthPrice(_withdrawAmount)
-                : _withdrawAmount
-        );
-        registry.setNFTGrossRevenue(_creatorNFT, grossRev);
-        if (currentDeal.claimedAmount >= currentDeal.totalPayment) {
-            currentDeal.status = Status.JobCompleted;
-        }
-        emit GrossRevenueUpdated(_creatorNFT, grossRev);
-        emit PaymentClaimed(_dealId, currentDeal.creator, _withdrawAmount);
-    }
-
-    /**
-     * @dev recruiter immediately unlocks an additional amount for the creator to claim
-     */
-    function additionalPayment(
-        uint256 _dealId,
-        uint256 _payment,
-        uint256 _recruiterNFT,
-        uint128 _rating
-    ) external payable {
-        Deal storage currentDeal = dealsMapping[_dealId];
-        require(
-            currentDeal.status == Status.OfferInitiated,
-            "deal is either completed or cancelled"
-        );
-        require(
-            _rating >= 0 && _rating <= 10,
-            "rating must be between 0 and 10"
-        );
-        require(
-            additionalPaymentLimit[_dealId] <= extraPaymentLimit,
-            "you can not make more than 3 additional payments"
-        );
-        require(
-            currentDeal.status == Status.OfferInitiated,
-            "job should be active"
-        );
-        require(
-            currentDeal.recruiter == msg.sender,
-            "only recruiter can add payments"
-        );
-
-        address _paymentToken = currentDeal.paymentToken;
-        if (_paymentToken == address(0)) {
-            require(
-                msg.value >= _payment,
-                "recruiter should deposit the additional payment"
-            );
-            currentDeal.claimableAmount += _payment;
-            currentDeal.totalPayment += _payment;
-        } else {
-            IERC20 paymentToken = IERC20(_paymentToken);
-            paymentToken.transferFrom(msg.sender, address(this), _payment);
-            currentDeal.claimableAmount += _payment;
-            currentDeal.totalPayment += _payment;
-        }
-
-        uint256 grossRev = (
-            _paymentToken == address(0) ? getEthPrice(_payment) : _payment
-        );
-        registry.setNFTGrossRevenue(_recruiterNFT, grossRev);
-
-        additionalPaymentLimit[_dealId]++;
-        currentDeal.creatorRating.push(_rating * PRECISION);
-
-        emit GrossRevenueUpdated(_recruiterNFT, grossRev);
-        emit AdditionalPayment(_dealId, currentDeal.recruiter, _payment);
+        dealsMap[_dealId] = deal;
+        dealsMap[_dealId].recruiterRating.push(_rating * PRECISION);
+        emit PaymentClaimed(_dealId, deal.creator, _claimAmount);
     }
 
     //----------------//
@@ -446,7 +314,7 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     //----------------//
 
     function getDeal(uint256 _dealId) public view returns (Deal memory) {
-        return dealsMapping[_dealId];
+        return dealsMap[_dealId];
     }
 
     function getPrecision() external pure returns (uint256) {
@@ -457,28 +325,20 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 _dealId
     ) public view returns (uint256) {
         uint256 sum;
-        for (
-            uint256 i = 0;
-            i < dealsMapping[_dealId].creatorRating.length;
-            i++
-        ) {
-            sum += dealsMapping[_dealId].creatorRating[i];
+        for (uint256 i = 0; i < dealsMap[_dealId].creatorRating.length; i++) {
+            sum += dealsMap[_dealId].creatorRating[i];
         }
-        return (sum / dealsMapping[_dealId].creatorRating.length);
+        return (sum / dealsMap[_dealId].creatorRating.length);
     }
 
     function getAvgRecruiterRating(
         uint256 _dealId
     ) public view returns (uint256) {
         uint256 sum;
-        for (
-            uint256 i = 0;
-            i < dealsMapping[_dealId].recruiterRating.length;
-            i++
-        ) {
-            sum += dealsMapping[_dealId].recruiterRating[i];
+        for (uint256 i = 0; i < dealsMap[_dealId].recruiterRating.length; i++) {
+            sum += dealsMap[_dealId].recruiterRating[i];
         }
-        return (sum / dealsMapping[_dealId].recruiterRating.length);
+        return (sum / dealsMap[_dealId].recruiterRating.length);
     }
 
     function getAggregatedRating(
@@ -512,18 +372,12 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         }
     }
 
-    function getTotalSuccessFee() external view returns (uint256) {
+    function getProfits() external view returns (uint256) {
         uint256 totalSuccessFee;
         for (uint256 i = 1; i <= dealIds.current(); i++) {
-            totalSuccessFee += dealsMapping[i].successFee;
+            totalSuccessFee += dealsMap[i].hwProfit;
         }
         return totalSuccessFee;
-    }
-
-    function getAdditionalPaymentLimit(
-        uint256 _dealId
-    ) external view returns (uint256) {
-        return additionalPaymentLimit[_dealId];
     }
 
     function getDealsOf(
@@ -533,8 +387,8 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
         uint256 arrayLocation = 0;
         for (uint256 i = 0; i <= dealIds.current(); i++) {
             if (
-                dealsMapping[i].creator == _address ||
-                dealsMapping[i].recruiter == _address
+                dealsMap[i].creator == _address ||
+                dealsMap[i].recruiter == _address
             ) {
                 deals[arrayLocation] = i;
                 arrayLocation++;
@@ -546,24 +400,17 @@ contract HWEscrow is Ownable, ReentrancyGuard, SigUtils {
     function getAllDeals() public view returns (Deal[] memory) {
         Deal[] memory deals = new Deal[](dealIds.current());
         for (uint256 i = 0; i < dealIds.current(); i++) {
-            deals[i] = dealsMapping[i];
+            deals[i] = dealsMap[i];
         }
         return deals;
-    }
-
-    function getEthPrice(uint256 _amount) internal view returns (uint256) {
-        uint256 reserve1;
-        uint256 reserve2;
-        (reserve1, reserve2, ) = pool.getReserves();
-        return router.quote(_amount, reserve1, reserve2);
     }
 
     function getDealsCount(address _address) internal view returns (uint256) {
         uint256 count;
         for (uint256 i = 0; i <= dealIds.current(); i++) {
             if (
-                dealsMapping[i].creator == _address ||
-                dealsMapping[i].recruiter == _address
+                dealsMap[i].creator == _address ||
+                dealsMap[i].recruiter == _address
             ) {
                 count++;
             }

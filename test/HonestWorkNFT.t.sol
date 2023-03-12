@@ -10,6 +10,9 @@ import "../src/utils/MockToken.sol";
 import "../src/HonestWorkNFT.sol";
 
 contract HonestWorkNFTTest is Test {
+    address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
+    address public constant WETH = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
     address public deployer = 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496;
     address public recruiter1;
     address public recruiter2;
@@ -19,8 +22,6 @@ contract HonestWorkNFTTest is Test {
     SigUtils public sigUtils;
     MockToken public token;
     MockToken public token2;
-    MockToken public token3;
-    HWEscrow public hplock;
     HonestWorkNFT public honestWorkNFT;
     HWRegistry public registry;
 
@@ -36,7 +37,6 @@ contract HonestWorkNFTTest is Test {
 
         token = new MockToken("MCK", "MOCK");
         token2 = new MockToken("MCK", "MOCK");
-        token3 = new MockToken("MCK", "MOCK");
 
         vm.prank(deployer);
         token.transfer(address(recruiter1), 500 ether);
@@ -44,26 +44,14 @@ contract HonestWorkNFTTest is Test {
         vm.prank(deployer);
         token2.transfer(address(recruiter1), 500 ether);
         token2.transfer(address(creator1), 500 ether);
-        vm.prank(deployer);
-        token3.transfer(address(recruiter1), 500 ether);
-        token3.transfer(address(creator1), 500 ether);
 
         registry = new HWRegistry();
-        address[] memory tokens = new address[](3);
+        address[] memory tokens = new address[](2);
         tokens[0] = address(token);
         tokens[1] = address(token2);
-        tokens[2] = address(0);
 
         honestWorkNFT = new HonestWorkNFT("matrix", tokens);
-        hplock = new HWEscrow(
-            address(registry),
-            0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,
-            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,
-            0x10ED43C718714eb63d5aA57B78B54704E256024E
-        );
         sigUtils = new SigUtils();
-
-        //console.log(x);
     }
 
     function testWhitelistMint() public {
@@ -71,7 +59,6 @@ contract HonestWorkNFTTest is Test {
         honestWorkNFT.setWhitelistRoot(
             0xbaad0cf668c3a28309eef83f54b1cec6ec6fe30c3366834fe377692bddd00d2c
         );
-        //console.log(address(deployer));
         bytes32[] memory proof = new bytes32[](3);
         proof[
             0
@@ -327,6 +314,3 @@ contract HonestWorkNFTTest is Test {
         assertEq(honestWorkNFT.tokenOfOwnerByIndex(address(recruiter1), 0), 1);
     }
 }
-
-// address recipient,
-// bytes32[] calldata _proof
