@@ -10,4 +10,6 @@ interface IPool {
     function price0CumulativeLast() external view returns (uint);
 
     function price1CumulativeLast() external view returns (uint);
+
+    function token0() external view returns (address);
 }

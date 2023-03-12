@@ -19,22 +19,10 @@ contract HWListing is Ownable {
     }
 
     IHWRegistry public registry;
-    IUniswapV2Router01 public router;
-    IERC20 public stableCoin;
-    IPool public pool;
-
     mapping(address => Payment[]) payments;
 
-    constructor(
-        address _registry,
-        address _pool,
-        address _stableCoin,
-        address _router
-    ) {
+    constructor(address _registry) {
         registry = IHWRegistry(_registry);
-        pool = IPool(_pool);
-        stableCoin = IERC20(_stableCoin);
-        router = IUniswapV2Router01(_router);
     }
 
     modifier checkWhitelist(address _token) {
@@ -59,10 +47,6 @@ contract HWListing is Ownable {
             msg.sender,
             IERC20(_token).balanceOf(address(this))
         );
-    }
-
-    function withdrawETH() external onlyOwner {
-        payable(msg.sender).transfer(address(this).balance);
     }
 
     function withdrawToken() external onlyOwner {
@@ -92,28 +76,6 @@ contract HWListing is Ownable {
         emit PaymentAdded(_token, _amount);
     }
 
-    function payForListingEth(
-        uint256 _minTokensOut,
-        uint256 _allowedDelay
-    ) external payable returns (uint[] memory) {
-        require(msg.value > 0, "Can't pay 0 ETH");
-        payments[msg.sender].push(
-            Payment(address(0), msg.value, block.timestamp)
-        );
-
-        address[] memory path = new address[](2);
-        path[0] = router.WETH();
-        path[1] = address(stableCoin);
-        uint[] memory amounts = router.swapExactETHForTokens{value: msg.value}(
-            _minTokensOut,
-            path,
-            address(this),
-            block.timestamp + _allowedDelay
-        );
-        emit PaymentAddedETH(msg.value);
-        return amounts;
-    }
-
     //----------------//
     //  view methods  //
     //----------------//
@@ -130,17 +92,5 @@ contract HWListing is Ownable {
         return payments[_user][payments[_user].length - 1];
     }
 
-    function getTokenBalance() external view returns (uint) {
-        return stableCoin.balanceOf(address(this));
-    }
-
-    function getEthPrice(uint256 _amount) internal view returns (uint) {
-        uint256 reserve1;
-        uint256 reserve2;
-        (reserve1, reserve2, ) = pool.getReserves();
-        return router.quote(_amount, reserve1, reserve2);
-    }
-
     event PaymentAdded(address indexed _token, uint256 _amount);
-    event PaymentAddedETH(uint256 _amount);
 }

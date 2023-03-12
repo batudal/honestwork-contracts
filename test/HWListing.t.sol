@@ -15,16 +15,6 @@ contract HWListingTest is Test {
         uint256 listingDate;
     }
 
-    uint256 bscFork;
-
-    // binance
-    address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
-    address public constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-    address public constant ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
-    IUniswapV2Router01 public router;
-    IERC20 public stableCoin;
-    IPool public pool;
-
     HWRegistry public registry;
     HWListing public listing;
     MockToken public token;
@@ -37,22 +27,11 @@ contract HWListingTest is Test {
     address public creator2;
 
     function setUp() public {
-        bscFork = vm.createFork("https://bsc-dataseed.binance.org/");
-        vm.selectFork(bscFork);
         registry = new HWRegistry();
-        listing = new HWListing(
-            address(registry),
-            0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16,
-            0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,
-            0x10ED43C718714eb63d5aA57B78B54704E256024E
-        );
+        listing = new HWListing(address(registry));
         token = new MockToken("MCK", "MOCK");
         token2 = new MockToken("MCK", "MOCK");
         token3 = new MockToken("MCK", "MOCK");
-
-        pool = IPool(POOL);
-        stableCoin = IERC20(BUSD);
-        router = IUniswapV2Router01(ROUTER);
 
         recruiter1 = vm.addr(1);
         recruiter2 = vm.addr(2);
@@ -98,20 +77,6 @@ contract HWListingTest is Test {
         );
     }
 
-    function testPayForListingEth() public {
-        vm.selectFork(bscFork);
-        assertEq(vm.activeFork(), bscFork);
-        vm.prank(deployer);
-        registry.addToWhitelist(address(0), 1000 ether);
-        assertEq(registry.isWhitelisted(address(0)), true);
-        vm.prank(recruiter1);
-        listing.payForListingEth{value: 1 ether}(200 ether, 100);
-        assert(listing.getTokenBalance() > 200 ether);
-        vm.prank(deployer);
-        listing.withdrawToken(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-        assertEq(token.balanceOf(address(listing)), 0 ether);
-    }
-
     function testWithdrawAll() public {
         vm.prank(deployer);
         registry.addToWhitelist(address(token), 1000 ether);
@@ -144,17 +109,5 @@ contract HWListingTest is Test {
         assertEq(token.balanceOf(address(listing)), 0 ether);
         assertEq(token2.balanceOf(address(listing)), 0 ether);
         assertEq(token3.balanceOf(address(listing)), 0 ether);
-    }
-
-    function testgetEthPrice() public {
-        vm.prank(deployer);
-        assert(getEthPrice(1 ether) > 250 ether);
-    }
-
-    function getEthPrice(uint256 _amount) internal view returns (uint256) {
-        uint256 reserve1;
-        uint256 reserve2;
-        (reserve1, reserve2, ) = pool.getReserves();
-        return router.quote(_amount, reserve1, reserve2);
     }
 }
