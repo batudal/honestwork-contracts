@@ -292,12 +292,11 @@ contract HWEscrowTest is Test {
             s
         );
         vm.warp(300);
-        vm.prank(creator1);
-        escrow.claimPayment(dealId, 1 ether, 10, 0);
         vm.prank(recruiter1);
         escrow.withdrawPayment(dealId);
         uint256 balanceAfter = token.balanceOf(address(recruiter1));
-        assertEq(balanceAfter + 3 ether - ((3 ether * 5) / 100), balanceBefore);
+        HWEscrow.Deal memory deal_ = escrow.getDeal(dealId);
+        assertEq(balanceAfter, balanceBefore);
     }
 
     function testWithdrawAfterClaim() public {
@@ -343,7 +342,7 @@ contract HWEscrowTest is Test {
         vm.prank(recruiter1);
         escrow.withdrawPayment(dealId);
         uint256 balanceAfter = token.balanceOf(address(recruiter1));
-        assertEq(balanceAfter + 3 ether, balanceBefore);
+        assertEq(balanceAfter + 105e16, balanceBefore);
     }
 
     function testGrossRevenue() public {

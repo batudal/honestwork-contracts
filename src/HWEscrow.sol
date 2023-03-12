@@ -253,13 +253,11 @@ contract HWEscrow is Ownable, SigUtils {
             "only recruiter can withdraw payments"
         );
 
+        uint256 untouchables = deal.claimedAmount + deal.hwProfit;
         IERC20(deal.paymentToken).transfer(
             msg.sender,
-            ((deal.totalPayment * (PRECISION + successFee)) /
-                PRECISION -
-                deal.claimedAmount -
-                deal.claimableAmount -
-                deal.hwProfit)
+            (((deal.totalPayment * (PRECISION + successFee)) / PRECISION) -
+                untouchables)
         );
         dealsMap[_dealId].status = Status.JobCancelled;
         emit PaymentWithdrawn(_dealId, deal.status);
