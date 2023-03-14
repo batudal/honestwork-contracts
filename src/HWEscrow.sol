@@ -32,6 +32,7 @@ contract HWEscrow is Ownable, SigUtils {
         Status status;
         uint128[] recruiterRating;
         uint128[] creatorRating;
+        uint256 timestamp;
     }
 
     uint128 immutable PRECISION = 1e2;
@@ -99,6 +100,11 @@ contract HWEscrow is Ownable, SigUtils {
     function changeExtraPaymentLimit(uint64 _limit) external onlyOwner {
         extraPaymentLimit = _limit;
         emit ExtraLimitChanged(_limit);
+    }
+
+
+    function testEvent(uint256 _testVar) external {
+        emit TestEvent(_testVar);
     }
 
     //--------------------//
@@ -186,7 +192,8 @@ contract HWEscrow is Ownable, SigUtils {
             _jobId,
             Status.OfferInitiated,
             new uint128[](0),
-            new uint128[](0)
+            new uint128[](0),
+            block.timestamp
         );
 
         IERC20(_paymentToken).transferFrom(
@@ -194,7 +201,7 @@ contract HWEscrow is Ownable, SigUtils {
             address(this),
             (_totalPayment * (PRECISION + successFee)) / PRECISION
         );
-        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken);
+        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken, _jobId);
 
         if (_downPayment != 0) {
             dealsMap[dealIds.current()].claimableAmount += _downPayment;
@@ -397,7 +404,7 @@ contract HWEscrow is Ownable, SigUtils {
 
     function getAllDeals() public view returns (Deal[] memory) {
         Deal[] memory deals = new Deal[](dealIds.current());
-        for (uint256 i = 0; i < dealIds.current(); i++) {
+        for (uint256 i = 0; i <= dealIds.current(); i++) {
             deals[i] = dealsMap[i];
         }
         return deals;
@@ -420,7 +427,8 @@ contract HWEscrow is Ownable, SigUtils {
         address indexed _recruiter,
         address indexed _creator,
         uint256 indexed _totalPayment,
-        address _paymentToken
+        address _paymentToken,
+        uint256 _jobId
     );
     event PaymentUnlocked(
         uint256 _dealId,
@@ -443,4 +451,5 @@ contract HWEscrow is Ownable, SigUtils {
     event ExtraLimitChanged(uint256 _newPaymentLimit);
     event TotalFeeClaimed(address _collector);
     event GrossRevenueUpdated(uint256 indexed _tokenId, uint256 _grossRevenue);
+    event TestEvent(uint256 _testVar);
 }
