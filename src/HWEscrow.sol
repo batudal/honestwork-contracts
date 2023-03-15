@@ -32,7 +32,6 @@ contract HWEscrow is Ownable, SigUtils {
         Status status;
         uint128[] recruiterRating;
         uint128[] creatorRating;
-        uint256 timestamp;
     }
 
     uint128 immutable PRECISION = 1e2;
@@ -103,9 +102,6 @@ contract HWEscrow is Ownable, SigUtils {
     }
 
 
-    function testEvent(uint256 _testVar) external {
-        emit TestEvent(_testVar);
-    }
 
     //--------------------//
     //  mutative methods  //
@@ -192,8 +188,7 @@ contract HWEscrow is Ownable, SigUtils {
             _jobId,
             Status.OfferInitiated,
             new uint128[](0),
-            new uint128[](0),
-            block.timestamp
+            new uint128[](0)
         );
 
         IERC20(_paymentToken).transferFrom(
@@ -451,5 +446,4 @@ contract HWEscrow is Ownable, SigUtils {
     event ExtraLimitChanged(uint256 _newPaymentLimit);
     event TotalFeeClaimed(address _collector);
     event GrossRevenueUpdated(uint256 indexed _tokenId, uint256 _grossRevenue);
-    event TestEvent(uint256 _testVar);
 }
