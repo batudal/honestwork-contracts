@@ -47,6 +47,7 @@ contract HWEscrow is Ownable, SigUtils {
 
     mapping(uint256 => uint256) public additionalPaymentLimit;
     mapping(uint256 => Deal) public dealsMap;
+    Deal[] public dealsAll;
 
     constructor(address _registry, uint128 _fee) Ownable() {
         successFee = _fee;
@@ -100,6 +101,8 @@ contract HWEscrow is Ownable, SigUtils {
         extraPaymentLimit = _limit;
         emit ExtraLimitChanged(_limit);
     }
+
+
 
     //--------------------//
     //  mutative methods  //
@@ -194,7 +197,7 @@ contract HWEscrow is Ownable, SigUtils {
             address(this),
             (_totalPayment * (PRECISION + successFee)) / PRECISION
         );
-        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken);
+        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken, _jobId);
 
         if (_downPayment != 0) {
             dealsMap[dealIds.current()].claimableAmount += _downPayment;
@@ -203,7 +206,7 @@ contract HWEscrow is Ownable, SigUtils {
                 dealsMap[dealIds.current()].recruiter,
                 _downPayment
             );
-
+            dealsAll.push(dealsMap[dealIds.current()]);
             registry.setNFTGrossRevenue(_recruiterNFTId, _downPayment);
             emit GrossRevenueUpdated(_recruiterNFTId, _downPayment);
         }
@@ -396,11 +399,7 @@ contract HWEscrow is Ownable, SigUtils {
     }
 
     function getAllDeals() public view returns (Deal[] memory) {
-        Deal[] memory deals = new Deal[](dealIds.current());
-        for (uint256 i = 0; i < dealIds.current(); i++) {
-            deals[i] = dealsMap[i];
-        }
-        return deals;
+        return dealsAll;
     }
 
     function getDealsCount(address _address) internal view returns (uint256) {
@@ -420,7 +419,8 @@ contract HWEscrow is Ownable, SigUtils {
         address indexed _recruiter,
         address indexed _creator,
         uint256 indexed _totalPayment,
-        address _paymentToken
+        address _paymentToken,
+        uint256 _jobId
     );
     event PaymentUnlocked(
         uint256 _dealId,
