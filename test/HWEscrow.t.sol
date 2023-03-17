@@ -395,4 +395,9 @@ contract HWEscrowTest is Test {
             (10 ether * 6) / 100
         );
     }
+
+    function testSuccessFee() public {
+        escrow.setSuccessFee(9);
+        assertEq(escrow.successFee(), 9);
+    }
 }
