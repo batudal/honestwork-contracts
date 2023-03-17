@@ -82,7 +82,7 @@ contract HWEscrow is Ownable, SigUtils {
     }
 
     function claimProfits(address _feeCollector) external onlyOwner {
-        for (uint256 i = 1; i <= dealsAll.length; i++) {
+        for (uint256 i = 0; i < dealsAll.length; i++) {
             uint256 profit = dealsAll[i].hwProfit;
             if (profit > 0) {
                 IERC20(dealsAll[i].paymentToken).transfer(
@@ -238,7 +238,7 @@ contract HWEscrow is Ownable, SigUtils {
         emit PaymentUnlocked(_dealId, deal.recruiter, _paymentAmount);
 
         if (_rating != 0) {
-            dealsAll[_dealId].creatorRating.push(_rating);
+            dealsAll[_dealId].creatorRating.push(_rating * PRECISION);
         }
         registry.setNFTGrossRevenue(_recruiterNFT, _paymentAmount);
         emit GrossRevenueUpdated(_recruiterNFT, _paymentAmount);

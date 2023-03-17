@@ -7,6 +7,9 @@ import "../src/HonestWorkNFT.sol";
 import "../src/HWRegistry.sol";
 import "../src/utils/MockToken.sol";
 import "../src/utils/SigUtils.sol";
+import "../src/interfaces/IHWRegistry.sol";
+import "forge-std/console.sol";
+
 
 contract HWEscrowTest is Test {
     enum Status {
@@ -39,6 +42,20 @@ contract HWEscrowTest is Test {
     uint256 internal recruiter1PrivateKey;
     uint256 internal creator2PrivateKey;
     uint256 internal recruiter2PrivateKey;
+
+    struct Deal {
+        address recruiter;
+        address creator;
+        address paymentToken;
+        uint256 totalPayment;
+        uint256 hwProfit;
+        uint256 claimedAmount;
+        uint256 claimableAmount;
+        uint256 jobId;
+        Status status;
+        uint128[] recruiterRating;
+        uint128[] creatorRating;
+    }
 
     function setUp() public {
         sigUtils = new SigUtils();
@@ -397,7 +414,348 @@ contract HWEscrowTest is Test {
     }
 
     function testSuccessFee() public {
-        escrow.setSuccessFee(9);
+        escrow.changeSuccessFee(9);
         assertEq(escrow.successFee(), 9);
     }
+
+    //function to test ClaimProfit
+    function testClaimProfit() public{
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = escrow.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v,
+            r,
+            s
+        );
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        escrow.claimPayment(dealId, 5 ether, 10, nftId2);
+
+        uint256 balanceBefore = token.balanceOf(address(deployer));
+        vm.prank(deployer);
+        escrow.claimProfit(dealId, address(deployer));
+        assertApproxEqAbs(
+            token.balanceOf(address(deployer)),
+            balanceBefore + 5 ether * 5 / 100,
+            1 ether / 1000
+        );
+    }
+
+    //function to test ClaimProfits
+    function testClaimProfits() public{
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = escrow.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v,
+            r,
+            s
+        );
+
+        vm.roll(100);
+        vm.prank(recruiter2);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message2 = sigUtils.getMessageHash(
+            address(recruiter2),
+            address(creator2),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage2 = sigUtils.getEthSignedMessageHash(message2);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(
+            creator2PrivateKey,
+            hashedMessage2
+        );
+        vm.prank(recruiter2);
+        uint256 dealId2 = escrow.createDeal(
+            address(recruiter2),
+            address(creator2),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v2,
+            r2,
+            s2
+        );
+
+
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        escrow.claimPayment(dealId, 5 ether, 10, nftId2);
+
+
+        vm.prank(recruiter2);
+        escrow.unlockPayment(dealId2, 5 ether, 7, nftId);
+
+        vm.prank(creator2);
+        escrow.claimPayment(dealId2, 5 ether, 10, nftId2);
+
+        uint256 balanceBefore = token.balanceOf(address(deployer));
+        vm.prank(deployer);
+        escrow.claimProfits(address(deployer));
+        assertApproxEqAbs(
+            token.balanceOf(address(deployer)),
+            balanceBefore + 10 ether * 5 / 100,
+            1 ether / 1000
+        );
+    }
+    
+
+
+    //function to test GetDeal
+    function testGetDeal() public{
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = escrow.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v,
+            r,
+            s
+        );
+
+        vm.roll(100);
+        vm.prank(recruiter2);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message2 = sigUtils.getMessageHash(
+            address(recruiter2),
+            address(creator2),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage2 = sigUtils.getEthSignedMessageHash(message2);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(
+            creator2PrivateKey,
+            hashedMessage2
+        );
+        vm.prank(recruiter2);
+        uint256 dealId2 = escrow.createDeal(
+            address(recruiter2),
+            address(creator2),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v2,
+            r2,
+            s2
+        );
+
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 5 ether, 7, nftId);
+
+        vm.prank(creator1);
+        escrow.claimPayment(dealId, 5 ether, 10, nftId2);
+
+        vm.warp(300);
+        vm.prank(recruiter2);
+        escrow.unlockPayment(dealId2, 5 ether, 7, nftId);
+
+        vm.prank(creator2);
+        escrow.claimPayment(dealId2, 3 ether, 10, nftId2);
+
+        HWEscrow.Deal memory deal1 = escrow.getDeal(dealId);
+        HWEscrow.Deal memory deal2 = escrow.getDeal(dealId2);
+
+        assertEq(deal1.recruiter, address(recruiter1));
+        assertEq(deal2.totalPayment, 10 ether );
+        assertEq(deal2.claimedAmount, 3 ether );
+
+    }
+
+    //function to test getAvgCreatorRating
+    function testAvgCreatorRating() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = escrow.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v,
+            r,
+            s
+        );
+
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(creator1), 0);
+
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 7, nftId);
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 4, nftId);
+
+                        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 2, nftId);
+
+
+
+        vm.warp(300);
+        assertEq(escrow.getAvgCreatorRating(dealId), 433);
+    }
+
+    //function to test getAvgRecruiterRating
+    function testAvgRecruiterRating() public {
+        vm.roll(100);
+        vm.prank(recruiter1);
+        token.approve(address(escrow), 12 ether);
+        bytes32 message = sigUtils.getMessageHash(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            0
+        );
+        bytes32 hashedMessage = sigUtils.getEthSignedMessageHash(message);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            creator1PrivateKey,
+            hashedMessage
+        );
+        vm.prank(recruiter1);
+        uint256 dealId = escrow.createDeal(
+            address(recruiter1),
+            address(creator1),
+            address(token),
+            10 ether,
+            0,
+            1,
+            0,
+            v,
+            r,
+            s
+        );
+
+        uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0); 
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 7, nftId2);
+
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 4, nftId2);
+
+        vm.prank(creator1);
+        escrow.claimPayment(dealId, 1 ether, 10, nftId);
+
+        vm.prank(creator1);
+        escrow.claimPayment(dealId, 1 ether, 2, nftId);
+        
+        vm.warp(300);
+        vm.prank(recruiter1);
+        escrow.unlockPayment(dealId, 1 ether, 2, nftId2);
+
+        assertEq(escrow.getAvgRecruiterRating(dealId), 600);
+
+    }
+
 }
