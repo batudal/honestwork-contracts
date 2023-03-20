@@ -130,6 +130,12 @@
           "internalType": "address",
           "name": "_paymentToken",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
         }
       ],
       "name": "OfferCreated",
@@ -472,19 +478,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "dealIds",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_value",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -492,7 +485,7 @@
           "type": "uint256"
         }
       ],
-      "name": "dealsMap",
+      "name": "deals",
       "outputs": [
         {
           "internalType": "address",
@@ -570,76 +563,6 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getAllDeals",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "recruiter",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "creator",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "paymentToken",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "totalPayment",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "hwProfit",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "claimedAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "claimableAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "jobId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "enum HWEscrow.Status",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint128[]",
-              "name": "recruiterRating",
-              "type": "uint128[]"
-            },
-            {
-              "internalType": "uint128[]",
-              "name": "creatorRating",
-              "type": "uint128[]"
-            }
-          ],
-          "internalType": "struct HWEscrow.Deal[]",
-          "name": "",
-          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
@@ -760,6 +683,76 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "getDeals",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "recruiter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "paymentToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalPayment",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "hwProfit",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimableAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "jobId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum HWEscrow.Status",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint128[]",
+              "name": "recruiterRating",
+              "type": "uint128[]"
+            },
+            {
+              "internalType": "uint128[]",
+              "name": "creatorRating",
+              "type": "uint128[]"
+            }
+          ],
+          "internalType": "struct HWEscrow.Deal[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -767,7 +760,7 @@
           "type": "address"
         }
       ],
-      "name": "getDealsOf",
+      "name": "getDeals",
       "outputs": [
         {
           "internalType": "uint256[]",

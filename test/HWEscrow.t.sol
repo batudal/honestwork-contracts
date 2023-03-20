@@ -10,7 +10,6 @@ import "../src/utils/SigUtils.sol";
 import "../src/interfaces/IHWRegistry.sol";
 import "forge-std/console.sol";
 
-
 contract HWEscrowTest is Test {
     enum Status {
         OfferInitiated,
@@ -135,6 +134,7 @@ contract HWEscrowTest is Test {
         assertEq(hw721.balanceOf(creator2), 1);
         assertTrue(registry.isWhitelisted(address(tokens[0])));
         assertTrue(registry.isWhitelisted(address(tokens[1])));
+        assertEq(escrow.getAggregatedRating(recruiter1), 0);
     }
 
     function testDeal() public {
@@ -312,7 +312,6 @@ contract HWEscrowTest is Test {
         vm.prank(recruiter1);
         escrow.withdrawPayment(dealId);
         uint256 balanceAfter = token.balanceOf(address(recruiter1));
-        HWEscrow.Deal memory deal_ = escrow.getDeal(dealId);
         assertEq(balanceAfter, balanceBefore);
     }
 
@@ -419,7 +418,7 @@ contract HWEscrowTest is Test {
     }
 
     //function to test ClaimProfit
-    function testClaimProfit() public{
+    function testClaimProfit() public {
         vm.roll(100);
         vm.prank(recruiter1);
         token.approve(address(escrow), 12 ether);
@@ -463,13 +462,13 @@ contract HWEscrowTest is Test {
         escrow.claimProfit(dealId, address(deployer));
         assertApproxEqAbs(
             token.balanceOf(address(deployer)),
-            balanceBefore + 5 ether * 5 / 100,
+            balanceBefore + (5 ether * 5) / 100,
             1 ether / 1000
         );
     }
 
     //function to test ClaimProfits
-    function testClaimProfits() public{
+    function testClaimProfits() public {
         vm.roll(100);
         vm.prank(recruiter1);
         token.approve(address(escrow), 12 ether);
@@ -530,7 +529,6 @@ contract HWEscrowTest is Test {
             s2
         );
 
-
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
         uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
 
@@ -540,7 +538,6 @@ contract HWEscrowTest is Test {
 
         vm.prank(creator1);
         escrow.claimPayment(dealId, 5 ether, 10, nftId2);
-
 
         vm.prank(recruiter2);
         escrow.unlockPayment(dealId2, 5 ether, 7, nftId);
@@ -553,15 +550,13 @@ contract HWEscrowTest is Test {
         escrow.claimProfits(address(deployer));
         assertApproxEqAbs(
             token.balanceOf(address(deployer)),
-            balanceBefore + 10 ether * 5 / 100,
+            balanceBefore + (10 ether * 5) / 100,
             1 ether / 1000
         );
     }
-    
-
 
     //function to test GetDeal
-    function testGetDeal() public{
+    function testGetDeal() public {
         vm.roll(100);
         vm.prank(recruiter1);
         token.approve(address(escrow), 12 ether);
@@ -643,9 +638,8 @@ contract HWEscrowTest is Test {
         HWEscrow.Deal memory deal2 = escrow.getDeal(dealId2);
 
         assertEq(deal1.recruiter, address(recruiter1));
-        assertEq(deal2.totalPayment, 10 ether );
-        assertEq(deal2.claimedAmount, 3 ether );
-
+        assertEq(deal2.totalPayment, 10 ether);
+        assertEq(deal2.claimedAmount, 3 ether);
     }
 
     //function to test getAvgCreatorRating
@@ -682,7 +676,6 @@ contract HWEscrowTest is Test {
 
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(creator1), 0);
 
-
         vm.warp(300);
         vm.prank(recruiter1);
         escrow.unlockPayment(dealId, 1 ether, 7, nftId);
@@ -691,11 +684,9 @@ contract HWEscrowTest is Test {
         vm.prank(recruiter1);
         escrow.unlockPayment(dealId, 1 ether, 4, nftId);
 
-                        vm.warp(300);
+        vm.warp(300);
         vm.prank(recruiter1);
         escrow.unlockPayment(dealId, 1 ether, 2, nftId);
-
-
 
         vm.warp(300);
         assertEq(escrow.getAvgCreatorRating(dealId), 433);
@@ -734,7 +725,7 @@ contract HWEscrowTest is Test {
         );
 
         uint256 nftId = hw721.tokenOfOwnerByIndex(address(recruiter1), 0);
-        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0); 
+        uint256 nftId2 = hw721.tokenOfOwnerByIndex(address(creator1), 0);
 
         vm.warp(300);
         vm.prank(recruiter1);
@@ -749,13 +740,12 @@ contract HWEscrowTest is Test {
 
         vm.prank(creator1);
         escrow.claimPayment(dealId, 1 ether, 2, nftId);
-        
+
         vm.warp(300);
         vm.prank(recruiter1);
         escrow.unlockPayment(dealId, 1 ether, 2, nftId2);
 
         assertEq(escrow.getAvgRecruiterRating(dealId), 600);
-
+        assertEq(escrow.getAggregatedRating(recruiter1), 600);
     }
-
 }

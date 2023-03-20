@@ -3,8 +3,6 @@ pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "./interfaces/IHWRegistry.sol";
 import "./interfaces/IHWRegistry.sol";
 import "./utils/SigUtils.sol";
 
@@ -13,7 +11,6 @@ import "./utils/SigUtils.sol";
 /// @notice Escrow contract for HonestWork
 /// @dev Facilitates deals between creators and recruiters
 contract HWEscrow is Ownable, SigUtils {
-
     enum Status {
         OfferInitiated,
         JobCompleted,
@@ -44,7 +41,7 @@ contract HWEscrow is Ownable, SigUtils {
     uint256 public profits;
 
     mapping(uint256 => uint256) public additionalPaymentLimit;
-    Deal[] public dealsAll;
+    Deal[] public deals;
 
     constructor(address _registry, uint128 _fee) Ownable() {
         successFee = _fee;
@@ -68,28 +65,25 @@ contract HWEscrow is Ownable, SigUtils {
         registry = _registry;
     }
 
-    function claimProfit(
-        uint256 _dealId,
-        address _feeCollector
-    ) external onlyOwner {
-        uint256 profit = dealsAll[_dealId].hwProfit;
+    function claimProfit(uint256 _dealId, address _feeCollector)
+        external
+        onlyOwner
+    {
+        uint256 profit = deals[_dealId].hwProfit;
 
-        IERC20(dealsAll[_dealId].paymentToken).transfer(_feeCollector, profit);
+        IERC20(deals[_dealId].paymentToken).transfer(_feeCollector, profit);
 
         profits += profit;
-        dealsAll[_dealId].hwProfit = 0;
-        emit FeeClaimed(_dealId, dealsAll[_dealId].hwProfit);
+        deals[_dealId].hwProfit = 0;
+        emit FeeClaimed(_dealId, deals[_dealId].hwProfit);
     }
 
     function claimProfits(address _feeCollector) external onlyOwner {
-        for (uint256 i = 0; i < dealsAll.length; i++) {
-            uint256 profit = dealsAll[i].hwProfit;
+        for (uint256 i = 0; i < deals.length; i++) {
+            uint256 profit = deals[i].hwProfit;
             if (profit > 0) {
-                IERC20(dealsAll[i].paymentToken).transfer(
-                    _feeCollector,
-                    profit
-                );
-                dealsAll[i].hwProfit = 0;
+                IERC20(deals[i].paymentToken).transfer(_feeCollector, profit);
+                deals[i].hwProfit = 0;
             }
         }
         emit TotalFeeClaimed(_feeCollector);
@@ -99,8 +93,6 @@ contract HWEscrow is Ownable, SigUtils {
         extraPaymentLimit = _limit;
         emit ExtraLimitChanged(_limit);
     }
-
-
 
     //--------------------//
     //  mutative methods  //
@@ -117,18 +109,18 @@ contract HWEscrow is Ownable, SigUtils {
         bytes memory _signature
     ) external returns (uint256) {
         (bytes32 r, bytes32 s, uint8 v) = SigUtils.splitSignature(_signature);
-            createDeal(
-                _recruiter,
-                _creator,
-                _paymentToken,
-                _totalPayment,
-                _downPayment,
-                _recruiterNFTId,
-                _jobId,
-                v,
-                r,
-                s
-            );
+        createDeal(
+            _recruiter,
+            _creator,
+            _paymentToken,
+            _totalPayment,
+            _downPayment,
+            _recruiterNFTId,
+            _jobId,
+            v,
+            r,
+            s
+        );
     }
 
     function createDeal(
@@ -187,26 +179,32 @@ contract HWEscrow is Ownable, SigUtils {
             new uint128[](0),
             new uint128[](0)
         );
-        dealsAll.push(deal);
+        deals.push(deal);
         IERC20(_paymentToken).transferFrom(
             msg.sender,
             address(this),
             (_totalPayment * (PRECISION + successFee)) / PRECISION
         );
-        emit OfferCreated(_recruiter, _creator, _totalPayment, _paymentToken, _jobId);
+        emit OfferCreated(
+            _recruiter,
+            _creator,
+            _totalPayment,
+            _paymentToken,
+            _jobId
+        );
 
         if (_downPayment != 0) {
-            dealsAll[dealsAll.length - 1].claimableAmount += _downPayment;
+            deals[deals.length - 1].claimableAmount += _downPayment;
             emit PaymentUnlocked(
-                dealsAll.length - 1,
-                dealsAll[dealsAll.length - 1].recruiter,
+                deals.length - 1,
+                deals[deals.length - 1].recruiter,
                 _downPayment
             );
-            
+
             registry.setNFTGrossRevenue(_recruiterNFTId, _downPayment);
             emit GrossRevenueUpdated(_recruiterNFTId, _downPayment);
         }
-        return dealsAll.length - 1;
+        return deals.length - 1;
     }
 
     function unlockPayment(
@@ -215,7 +213,7 @@ contract HWEscrow is Ownable, SigUtils {
         uint128 _rating,
         uint256 _recruiterNFT
     ) public {
-        Deal memory deal = dealsAll[_dealId];
+        Deal memory deal = deals[_dealId];
         require(
             deal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
@@ -234,18 +232,18 @@ contract HWEscrow is Ownable, SigUtils {
             "can not go above total payment, "
         );
 
-        dealsAll[_dealId].claimableAmount += _paymentAmount;
+        deals[_dealId].claimableAmount += _paymentAmount;
         emit PaymentUnlocked(_dealId, deal.recruiter, _paymentAmount);
 
         if (_rating != 0) {
-            dealsAll[_dealId].creatorRating.push(_rating * PRECISION);
+            deals[_dealId].creatorRating.push(_rating * PRECISION);
         }
         registry.setNFTGrossRevenue(_recruiterNFT, _paymentAmount);
         emit GrossRevenueUpdated(_recruiterNFT, _paymentAmount);
     }
 
     function withdrawPayment(uint256 _dealId) external {
-        Deal memory deal = dealsAll[_dealId];
+        Deal memory deal = deals[_dealId];
         require(deal.status == Status.OfferInitiated, "job should be active");
         require(
             deal.recruiter == msg.sender,
@@ -258,7 +256,7 @@ contract HWEscrow is Ownable, SigUtils {
             (((deal.totalPayment * (PRECISION + successFee)) / PRECISION) -
                 untouchables)
         );
-        dealsAll[_dealId].status = Status.JobCancelled;
+        deals[_dealId].status = Status.JobCancelled;
         emit PaymentWithdrawn(_dealId, deal.status);
     }
 
@@ -268,7 +266,7 @@ contract HWEscrow is Ownable, SigUtils {
         uint128 _rating,
         uint256 _creatorNFT
     ) external {
-        Deal memory deal = dealsAll[_dealId];
+        Deal memory deal = deals[_dealId];
         require(
             deal.status == Status.OfferInitiated,
             "deal is either completed or cancelled"
@@ -301,8 +299,8 @@ contract HWEscrow is Ownable, SigUtils {
         if (deal.claimedAmount >= deal.totalPayment) {
             deal.status = Status.JobCompleted;
         }
-        dealsAll[_dealId] = deal;
-        dealsAll[_dealId].recruiterRating.push(_rating * PRECISION);
+        deals[_dealId] = deal;
+        deals[_dealId].recruiterRating.push(_rating * PRECISION);
         emit PaymentClaimed(_dealId, deal.creator, _claimAmount);
     }
 
@@ -311,55 +309,64 @@ contract HWEscrow is Ownable, SigUtils {
     //----------------//
 
     function getDeal(uint256 _dealId) public view returns (Deal memory) {
-        return dealsAll[_dealId];
+        return deals[_dealId];
     }
 
     function getPrecision() external pure returns (uint256) {
         return PRECISION;
     }
 
-    function getAvgCreatorRating(
-        uint256 _dealId
-    ) public view returns (uint256) {
+    function getAvgCreatorRating(uint256 _dealId)
+        public
+        view
+        returns (uint256)
+    {
         uint256 sum;
-        for (uint256 i = 0; i < dealsAll[_dealId].creatorRating.length; i++) {
-            sum += dealsAll[_dealId].creatorRating[i];
+        for (uint256 i = 0; i < deals[_dealId].creatorRating.length; i++) {
+            sum += deals[_dealId].creatorRating[i];
         }
-        return (sum / dealsAll[_dealId].creatorRating.length);
+        return (sum / deals[_dealId].creatorRating.length);
     }
 
-    function getAvgRecruiterRating(
-        uint256 _dealId
-    ) public view returns (uint256) {
+    function getAvgRecruiterRating(uint256 _dealId)
+        public
+        view
+        returns (uint256)
+    {
         uint256 sum;
-        for (uint256 i = 0; i < dealsAll[_dealId].recruiterRating.length; i++) {
-            sum += dealsAll[_dealId].recruiterRating[i];
+        for (uint256 i = 0; i < deals[_dealId].recruiterRating.length; i++) {
+            sum += deals[_dealId].recruiterRating[i];
         }
-        return (sum / dealsAll[_dealId].recruiterRating.length);
+        return (sum / deals[_dealId].recruiterRating.length);
     }
 
-    function getAggregatedRating(
-        address _address
-    ) public view returns (uint256) {
+    function getAggregatedRating(address _address)
+        public
+        view
+        returns (uint256)
+    {
         uint256 gross_amount = 0;
         uint256 gross_rating = 0;
-        uint256[] memory deal_ids = getDealsOf(_address);
-        for (uint256 i = 0; i < deal_ids.length; i++) {
-            Deal memory deal = getDeal(deal_ids[i]);
-            if (
-                _address == deal.recruiter && deal.recruiterRating.length != 0
-            ) {
-                gross_rating +=
-                    getAvgRecruiterRating(deal_ids[i]) *
-                    deal.claimedAmount;
-                gross_amount += deal.claimedAmount;
-            } else if (
-                _address == deal.creator && deal.creatorRating.length != 0
-            ) {
-                gross_rating +=
-                    getAvgCreatorRating(deal_ids[i]) *
-                    (deal.claimedAmount + deal.claimableAmount);
-                gross_amount += (deal.claimedAmount + deal.claimableAmount);
+        uint256[] memory deal_ids = getDeals(_address);
+        if (deal_ids.length > 0) {
+            for (uint256 i = 0; i < deal_ids.length; i++) {
+                Deal memory deal = getDeal(deal_ids[i]);
+                if (
+                    _address == deal.recruiter &&
+                    deal.recruiterRating.length != 0
+                ) {
+                    gross_rating +=
+                        getAvgRecruiterRating(deal_ids[i]) *
+                        deal.claimedAmount;
+                    gross_amount += deal.claimedAmount;
+                } else if (
+                    _address == deal.creator && deal.creatorRating.length != 0
+                ) {
+                    gross_rating +=
+                        getAvgCreatorRating(deal_ids[i]) *
+                        (deal.claimedAmount + deal.claimableAmount);
+                    gross_amount += (deal.claimedAmount + deal.claimableAmount);
+                }
             }
         }
         if (gross_amount == 0) {
@@ -371,39 +378,35 @@ contract HWEscrow is Ownable, SigUtils {
 
     function getProfits() external view returns (uint256) {
         uint256 totalSuccessFee;
-        for (uint256 i = 1; i <= dealsAll.length; i++) {
-            totalSuccessFee += dealsAll[i].hwProfit;
+        for (uint256 i = 1; i <= deals.length; i++) {
+            totalSuccessFee += deals[i].hwProfit;
         }
         return totalSuccessFee;
     }
 
-    function getDealsOf(
-        address _address
-    ) public view returns (uint256[] memory) {
-        uint256[] memory deals = new uint256[](getDealsCount(_address));
-        uint256 arrayLocation = 0;
-        for (uint256 i = 0; i <= dealsAll.length; i++) {
+    function getDeals(address _address) public view returns (uint256[] memory) {
+        uint256[] memory user_deals = new uint256[](countDeals(_address));
+        uint256 c = 0;
+        for (uint256 i = 0; i < deals.length; i++) {
             if (
-                dealsAll[i].creator == _address ||
-                dealsAll[i].recruiter == _address
+                deals[i].creator == _address || deals[i].recruiter == _address
             ) {
-                deals[arrayLocation] = i;
-                arrayLocation++;
+                user_deals[c] = i;
+                c++;
             }
         }
+        return user_deals;
+    }
+
+    function getDeals() public view returns (Deal[] memory) {
         return deals;
     }
 
-    function getdealsAll() public view returns (Deal[] memory) {
-        return dealsAll;
-    }
-
-    function getDealsCount(address _address) internal view returns (uint256) {
+    function countDeals(address _address) internal view returns (uint256) {
         uint256 count;
-        for (uint256 i = 0; i <= dealsAll.length; i++) {
+        for (uint256 i = 0; i < deals.length; i++) {
             if (
-                dealsAll[i].creator == _address ||
-                dealsAll[i].recruiter == _address
+                deals[i].creator == _address || deals[i].recruiter == _address
             ) {
                 count++;
             }
