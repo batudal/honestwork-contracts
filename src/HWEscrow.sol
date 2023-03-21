@@ -378,7 +378,7 @@ contract HWEscrow is Ownable, SigUtils {
 
     function getProfits() external view returns (uint256) {
         uint256 totalSuccessFee;
-        for (uint256 i = 1; i <= deals.length; i++) {
+        for (uint256 i = 0; i < deals.length; i++) {
             totalSuccessFee += deals[i].hwProfit;
         }
         return totalSuccessFee;
