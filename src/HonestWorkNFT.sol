@@ -27,16 +27,15 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     mapping(address => bool) public whitelistedTokens;
     mapping(address => bool) public whitelistCap;
     mapping(uint256 => uint256) public tier;
-    
+
     bool public isPaused = false;
 
     event Upgrade(uint256 id, uint256 tier);
     event Mint(uint256 id, address user);
 
-    constructor(
-        string memory _baseUri,
-        address[] memory _whitelistedTokens
-    ) ERC721("HonestWork Genesis", "HWG") {
+    constructor(string memory _baseUri, address[] memory _whitelistedTokens)
+        ERC721("HonestWork Genesis", "HWG")
+    {
         baseUri = _baseUri;
         for (uint256 i = 0; i < _whitelistedTokens.length; i++) {
             whitelistedTokens[_whitelistedTokens[i]] = true;
@@ -88,7 +87,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     function removeWhitelistToken(address _token) external onlyOwner {
         whitelistedTokens[_token] = false;
     }
-    
 
     function adminMint(address _to, uint256 _tier) external onlyOwner {
         require(_tokenIds.current() < tokenCap, "Token cap reached");
@@ -120,9 +118,9 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         address _to,
         uint256 _tokenId,
         uint256 _batchSize
-    ) internal whenNotPaused override(ERC721, ERC721Enumerable) {
-        if(_to != owner()) {
-        require(balanceOf(_to) == 0, "only one nft at a time");
+    ) internal override(ERC721, ERC721Enumerable) whenNotPaused {
+        if (_to != owner()) {
+            require(balanceOf(_to) == 0, "only one nft at a time");
         }
         super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
     }
@@ -150,7 +148,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     //  mutative methods  //
     //--------------------//
 
-    function publicMint(address _token) whenNotPaused external {
+    function publicMint(address _token) external whenNotPaused {
         require(whitelistedTokens[_token], "token not whitelisted");
         IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
         _tokenIds.increment();
@@ -161,7 +159,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         emit Mint(newItemId, msg.sender);
     }
 
-    function whitelistMint(bytes32[] calldata _proof) whenNotPaused external {
+    function whitelistMint(bytes32[] calldata _proof) external whenNotPaused {
         require(!whitelistCap[msg.sender], "whitelist cap reached");
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
@@ -185,13 +183,25 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         require(whitelistedTokens[_token], "token not whitelisted");
         if (_levels == 2) {
             require(tier[_tokenId] == 1);
-            IERC20(_token).transferFrom(msg.sender, address(this), tierThreeFee - tierOneFee);
+            IERC20(_token).transferFrom(
+                msg.sender,
+                address(this),
+                tierThreeFee - tierOneFee
+            );
             tier[_tokenId] += 2;
         } else {
             if (tier[_tokenId] == 1) {
-              IERC20(_token).transferFrom(msg.sender, address(this), tierTwoFee - tierOneFee);
+                IERC20(_token).transferFrom(
+                    msg.sender,
+                    address(this),
+                    tierTwoFee - tierOneFee
+                );
             } else {
-              IERC20(_token).transferFrom(msg.sender, address(this), tierThreeFee - tierTwoFee);
+                IERC20(_token).transferFrom(
+                    msg.sender,
+                    address(this),
+                    tierThreeFee - tierTwoFee
+                );
             }
             tier[_tokenId]++;
         }
@@ -214,15 +224,21 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
         return tier[_tokenId];
     }
 
-    function supportsInterface(
-        bytes4 _interfaceId
-    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
+    function supportsInterface(bytes4 _interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool)
+    {
         return super.supportsInterface(_interfaceId);
     }
 
-    function tokenURI(
-        uint256 _tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         return string(abi.encodePacked(baseUri, _toString(_tokenId)));
     }
 
@@ -233,7 +249,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     //----------------//
     //   modifiers    //
     //----------------//
- 
+
     modifier whenNotPaused() {
         require(!isPaused, "Contract is paused");
         _;

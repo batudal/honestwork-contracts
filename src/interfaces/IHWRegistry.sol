@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 interface IHWRegistry {
     struct Whitelist {
@@ -35,10 +35,10 @@ interface IHWRegistry {
 
     function getNFTGrossRevenue(uint256 _id) external view returns (uint256);
 
-    function isAllowedAmount(
-        address _address,
-        uint256 _amount
-    ) external view returns (bool);
+    function isAllowedAmount(address _address, uint256 _amount)
+        external
+        view
+        returns (bool);
 
     function counter() external view returns (uint256);
 }

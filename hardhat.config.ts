@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.18",
+  solidity: "0.8.19",
   preprocess: {
     eachLine: (hre) => ({
       transform: (line: string) => {

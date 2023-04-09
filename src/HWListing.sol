@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -67,10 +67,10 @@ contract HWListing is Ownable {
     //  mutative methods  //
     //--------------------//
 
-    function payForListing(
-        address _token,
-        uint256 _amount
-    ) external checkWhitelist(_token) {
+    function payForListing(address _token, uint256 _amount)
+        external
+        checkWhitelist(_token)
+    {
         IERC20(_token).transferFrom(msg.sender, address(this), _amount);
         payments[msg.sender].push(Payment(_token, _amount, block.timestamp));
         emit PaymentAdded(_token, _amount);
@@ -80,15 +80,19 @@ contract HWListing is Ownable {
     //  view methods  //
     //----------------//
 
-    function getPayments(
-        address _user
-    ) external view returns (Payment[] memory) {
+    function getPayments(address _user)
+        external
+        view
+        returns (Payment[] memory)
+    {
         return payments[_user];
     }
 
-    function getLatestPayment(
-        address _user
-    ) external view returns (Payment memory) {
+    function getLatestPayment(address _user)
+        external
+        view
+        returns (Payment memory)
+    {
         return payments[_user][payments[_user].length - 1];
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -34,10 +34,10 @@ contract HWRegistry is Ownable {
     //  admin methods  //
     //-----------------//
 
-    function addToWhitelist(
-        address _address,
-        uint256 _maxAllowed
-    ) external onlyOwner {
+    function addToWhitelist(address _address, uint256 _maxAllowed)
+        external
+        onlyOwner
+    {
         whitelist[Counters.current(counter)] = Whitelist({
             token: _address,
             maxAllowed: _maxAllowed
@@ -52,10 +52,10 @@ contract HWRegistry is Ownable {
         emit WhitelistRemoved(_address);
     }
 
-    function updateWhitelist(
-        address _address,
-        uint256 _maxAllowed
-    ) external onlyOwner {
+    function updateWhitelist(address _address, uint256 _maxAllowed)
+        external
+        onlyOwner
+    {
         whitelist[getWhitelistID(_address)].maxAllowed = _maxAllowed;
         emit WhitelistUpdated(_address, _maxAllowed);
     }
@@ -68,10 +68,10 @@ contract HWRegistry is Ownable {
     //  mutative methods  //
     //--------------------//
 
-    function setNFTGrossRevenue(
-        uint256 _id,
-        uint256 _amount
-    ) external onlyHWEscrow {
+    function setNFTGrossRevenue(uint256 _id, uint256 _amount)
+        external
+        onlyHWEscrow
+    {
         nftGrossRevenue[_id] += _amount;
     }
 
@@ -103,10 +103,11 @@ contract HWRegistry is Ownable {
         return nftGrossRevenue[_id];
     }
 
-    function isAllowedAmount(
-        address _address,
-        uint256 _amount
-    ) public view returns (bool) {
+    function isAllowedAmount(address _address, uint256 _amount)
+        public
+        view
+        returns (bool)
+    {
         bool isAllowedAmount_;
         for (uint256 i = 0; i < Counters.current(counter); i++) {
             if (whitelist[i].token == _address) {

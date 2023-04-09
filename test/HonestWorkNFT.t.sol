@@ -2,12 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../src/HWEscrow.sol";
 import "../src/HonestWorkNFT.sol";
-import "../src/HWRegistry.sol";
-import "../src/HWListing.sol";
 import "../src/utils/MockToken.sol";
 import "../src/HonestWorkNFT.sol";
+import "../src/utils/SigUtils.sol";
 
 contract HonestWorkNFTTest is Test {
     address public constant POOL = 0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16;
@@ -23,7 +21,6 @@ contract HonestWorkNFTTest is Test {
     MockToken public token;
     MockToken public token2;
     HonestWorkNFT public honestWorkNFT;
-    HWRegistry public registry;
 
     function setUp() public {
         recruiter1 = vm.addr(1);
@@ -45,7 +42,6 @@ contract HonestWorkNFTTest is Test {
         token2.transfer(address(recruiter1), 500 ether);
         token2.transfer(address(creator1), 500 ether);
 
-        registry = new HWRegistry();
         address[] memory tokens = new address[](2);
         tokens[0] = address(token);
         tokens[1] = address(token2);

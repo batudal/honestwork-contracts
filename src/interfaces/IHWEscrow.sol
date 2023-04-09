@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 import "./IHWRegistry.sol";
 
 interface IHWEscrow {
@@ -100,27 +100,32 @@ interface IHWEscrow {
 
     function getPrecision() external pure returns (uint256);
 
-    function getAvgCreatorRating(
-        uint256 _dealId
-    ) external view returns (uint256);
+    function getAvgCreatorRating(uint256 _dealId)
+        external
+        view
+        returns (uint256);
 
-    function getAvgRecruiterRating(
-        uint256 _dealId
-    ) external view returns (uint256);
+    function getAvgRecruiterRating(uint256 _dealId)
+        external
+        view
+        returns (uint256);
 
-    function getAggregatedRating(
-        address _address
-    ) external view returns (uint256);
+    function getAggregatedRating(address _address)
+        external
+        view
+        returns (uint256);
 
     function getTotalSuccessFee() external view returns (uint256);
 
-    function getAdditionalPaymentLimit(
-        uint256 _dealId
-    ) external view returns (uint256);
+    function getAdditionalPaymentLimit(uint256 _dealId)
+        external
+        view
+        returns (uint256);
 
-    function getDealsOf(
-        address _address
-    ) external view returns (uint256[] memory);
+    function getDealsOf(address _address)
+        external
+        view
+        returns (uint256[] memory);
 
     function getAllDeals() external view returns (Deal[] memory);
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 interface IHWListing {
     struct Payment {
@@ -28,22 +28,24 @@ interface IHWListing {
 
     function payForListing(address _token, uint256 _amount) external;
 
-    function payForListingEth(
-        uint256 _minTokensOut,
-        uint256 _allowedDelay
-    ) external payable returns (uint[] memory);
+    function payForListingEth(uint256 _minTokensOut, uint256 _allowedDelay)
+        external
+        payable
+        returns (uint256[] memory);
 
     //----------------//
     //  view methods  //
     //----------------//
 
-    function getPayments(
-        address _user
-    ) external view returns (Payment[] memory);
+    function getPayments(address _user)
+        external
+        view
+        returns (Payment[] memory);
 
-    function getLatestPayment(
-        address _user
-    ) external view returns (Payment memory);
+    function getLatestPayment(address _user)
+        external
+        view
+        returns (Payment memory);
 
-    function getTokenBalance() external view returns (uint);
+    function getTokenBalance() external view returns (uint256);
 }
