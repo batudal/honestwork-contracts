@@ -89,7 +89,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
 
     function publicMint(address _token) external whenNotPaused {
         require(whitelistedTokens[_token], "token not whitelisted");
-        IERC20(_token).transferFrom(msg.sender, address(this), tierOneFee);
+        IERC20(_token).transferFrom(msg.sender, address(this), fee);
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         require(newItemId < tokenCap, "all the nfts are claimed");
