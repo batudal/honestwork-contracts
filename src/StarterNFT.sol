@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
-
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title HonestWork Starter NFT
 /// @author @takez0_o
 /// @notice Starter Membership NFT's to be used in the platform
-contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
+contract StarterNFT is ERC721, Ownable {
     string public baseUri;
     uint256 public fee = 10e18;
     uint256 public cap = 10000;
+    uint256 public token_id = 0;
     mapping(address => bool) public whitelistedTokens;
-
     bool public isPaused = false;
 
     event Mint(uint256 id, address user);
@@ -90,12 +88,10 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     function publicMint(address _token) external whenNotPaused {
         require(whitelistedTokens[_token], "token not whitelisted");
         IERC20(_token).transferFrom(msg.sender, address(this), fee);
-        _tokenIds.increment();
-        uint256 newItemId = _tokenIds.current();
-        require(newItemId < tokenCap, "all the nfts are claimed");
-        _mint(msg.sender, newItemId);
-        tier[newItemId] = 1;
-        emit Mint(newItemId, msg.sender);
+        require(token_id < cap, "all the nfts are claimed");
+        _mint(msg.sender, token_id);
+        emit Mint(token_id, msg.sender);
+        token_id++;
     }
 
     //----------------//
@@ -105,7 +101,7 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
     function supportsInterface(bytes4 _interfaceId)
         public
         view
-        override(ERC721, ERC721Enumerable)
+        override(ERC721)
         returns (bool)
     {
         return super.supportsInterface(_interfaceId);
