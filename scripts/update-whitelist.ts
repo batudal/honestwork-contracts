@@ -17,7 +17,9 @@ const main = async () => {
   const response = await notion_client.databases.query({ database_id: process.env.NOTION_DATABASE_ID! });
   for (let i = 0; i < response.results.length; i++) {
     const page_response: any = await notion_client.pages.retrieve({ page_id: response.results[i].id });
-    queue.push(page_response.properties.Address.title[0].plain_text);
+    if (page_response.properties.Address.title.length > 0) {
+      queue.push(page_response.properties.Address.title[0].plain_text);
+    }
   }
   console.log("Queue: ", queue);
   await updateContract(queue);
