@@ -1,17 +1,15 @@
 import { Client as notion_Client } from "@notionhq/client";
-import { Client as redis_Client } from "redis-om";
 import { ethers } from "hardhat";
 import { MerkleTree } from "merkletreejs";
-const keccak256 = require("keccak256");
 import * as dotenv from "dotenv";
 import { QueryDatabaseResponse } from "@notionhq/client/build/src/api-endpoints";
+import { MongoClient } from 'mongodb';
+import Keccak256 from "keccak256";
 dotenv.config();
 
 const main = async () => {
-  const redis_client = new redis_Client();
-  if (!redis_client.isOpen()) {
-    await redis_client.open(process.env.REDIS_URL);
-  }
+  const mongodb_client = new MongoClient(process.env.MONGODB_URI!);
+  await mongodb_client.connect();
   let queue = [];
   const notion_client = new notion_Client({ auth: process.env.NOTION_KEY });
   const response = await notion_client.databases.query({ database_id: process.env.NOTION_DATABASE_ID! });
@@ -24,14 +22,20 @@ const main = async () => {
   console.log("Queue: ", queue);
   await updateContract(queue);
   console.log("Updated contract.");
-  await updateDB(redis_client, "whitelist", queue);
+  await updateDB(mongodb_client, queue);
   console.log("Updated db.");
   await updateNotionPages(notion_client, response);
   console.log("Updated notion.");
-  redis_client.close();
+  mongodb_client.close()
 };
-const updateDB = async (redis_client: redis_Client, key: string, queue: string[]) => {
-  await redis_client.execute(["JSON.SET", key, "$", JSON.stringify(queue)]);
+const updateDB = async (mongodb_client: MongoClient, queue: string[]) => {
+  const database = mongodb_client.db("honestwork-cluster");
+  const collection = database.collection("whitelists");
+  const query = {
+    addresses: queue,
+    createdat: new Date().getTime(),
+  }
+  await collection.insertOne(query);
 };
 const updateNotionPages = async (notion_client: notion_Client, response: QueryDatabaseResponse) => {
   for (let i = 0; i < response.results.length; i++) {
@@ -52,8 +56,8 @@ const updateNotionPages = async (notion_client: notion_Client, response: QueryDa
 const updateContract = async (queue: string[]) => {
   const NFTContract = await ethers.getContractFactory("HonestWorkNFT");
   const contract = NFTContract.attach(process.env.HONESTWORK_NFT_ADDRESS!);
-  const leaves = queue.map((address) => keccak256(address));
-  const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+  const leaves = queue.map((address) => Keccak256(address));
+  const tree = new MerkleTree(leaves, Keccak256, { sortPairs: true });
   const root = tree.getHexRoot();
   console.log("Root: ", root);
   const tx = await contract.setWhitelistRoot(root);
