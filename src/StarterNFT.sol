@@ -19,13 +19,11 @@ contract StarterNFT is ERC721, Ownable {
 
     event Mint(uint256 id, address user);
 
-    constructor(string memory _baseuri, address[] memory _whitelist)
+    constructor(string memory _baseuri, address _whitelist)
         ERC721("HonestWork Starter", "HWS")
     {
         baseuri = _baseuri;
-        for (uint256 i = 0; i < _whitelist.length; i++) {
-            whitelist.push(_whitelist[i]);
-        }
+        whitelist.push(_whitelist);
     }
 
     //-----------------//

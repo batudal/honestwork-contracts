@@ -17,9 +17,7 @@ contract StarterNFTTest is Test {
     function setUp() public {
         token = new MockToken("MCK", "MOCK");
         assertEq(token.balanceOf(address(this)), mock_amount);
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(token);
-        starterNFT = new StarterNFT(baseuri, tokens);
+        starterNFT = new StarterNFT(baseuri, address(token));
         assertEq(starterNFT.tokenURI(42), single_asset_uri);
         address[] memory whitelist = starterNFT.getWhitelist();
         assertEq(whitelist.length, 1);
