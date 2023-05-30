@@ -1,129 +1,170 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.7;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
 
-// import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-// import "@openzeppelin/contracts/access/Ownable.sol";
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// /// @title HonestWork Starter NFT
-// /// @author @takez0_o
-// /// @notice Starter Membership NFT's to be used in the platform
-// contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
-//     string public baseUri;
-//     uint256 public fee = 10e18;
-//     uint256 public cap = 10000;
-//     mapping(address => bool) public whitelistedTokens;
+/// @title HonestWork Starter NFT
+/// @author @takez0_o
+/// @notice Starter Membership NFT's to be used in the platform
+contract StarterNFT is ERC721, Ownable {
+    string public baseuri;
+    uint256 public fee = 10e18;
+    uint256 public cap = 10000;
+    uint256 public id = 0;
+    address[] public whitelist;
+    bool public paused = false;
+    bool public single_asset = true;
 
-//     bool public isPaused = false;
+    event Mint(uint256 id, address user);
 
-//     event Mint(uint256 id, address user);
+    constructor(string memory _baseuri, address[] memory _whitelist)
+        ERC721("HonestWork Starter", "HWS")
+    {
+        baseuri = _baseuri;
+        for (uint256 i = 0; i < _whitelist.length; i++) {
+            whitelist.push(_whitelist[i]);
+        }
+    }
 
-//     constructor(string memory _baseUri, address[] memory _whitelistedTokens)
-//         ERC721("HonestWork Starter", "HWS")
-//     {
-//         baseUri = _baseUri;
-//         for (uint256 i = 0; i < _whitelistedTokens.length; i++) {
-//             whitelistedTokens[_whitelistedTokens[i]] = true;
-//         }
-//     }
+    //-----------------//
+    //  admin methods  //
+    //-----------------//
 
-//     //-----------------//
-//     //  admin methods  //
-//     //-----------------//
+    function setBaseUri(string memory _baseuri) external onlyOwner {
+        baseuri = _baseuri;
+    }
 
-//     function setBaseUri(string memory _baseUri) external onlyOwner {
-//         baseUri = _baseUri;
-//     }
+    function setCap(uint256 _cap) external onlyOwner {
+        cap = _cap;
+    }
 
-//     function set_cap(uint256 _cap) external onlyOwner {
-//         cap = _cap;
-//     }
+    function setSingleAsset(bool _single_asset) external onlyOwner {
+        single_asset = _single_asset;
+    }
 
-//     function whitelistToken(address _token) external onlyOwner {
-//         whitelistedTokens[_token] = true;
-//     }
+    function whitelistToken(address _token) external onlyOwner {
+        whitelist.push(_token);
+    }
 
-//     function withdraw(address _token, uint256 _amount) external onlyOwner {
-//         IERC20(_token).transfer(msg.sender, _amount);
-//     }
+    function pause() external onlyOwner {
+        paused = true;
+    }
 
-//     function pause() external onlyOwner {
-//         isPaused = true;
-//     }
+    function unpause() external onlyOwner {
+        paused = false;
+    }
 
-//     function unpause() external onlyOwner {
-//         isPaused = false;
-//     }
+    function removeWhitelistToken(address _token) external onlyOwner {
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            if (whitelist[i] == _token) {
+                delete whitelist[i];
+            }
+        }
+    }
 
-//     function removeWhitelistToken(address _token) external onlyOwner {
-//         whitelistedTokens[_token] = false;
-//     }
+    function withdraw(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, _amount);
+    }
 
-//     //--------------------//
-//     //  internal methods  //
-//     //--------------------//
+    function withdraw(address _token) external onlyOwner {
+        IERC20(_token).transfer(
+            msg.sender,
+            IERC20(_token).balanceOf(address(this))
+        );
+    }
 
-//     function _toString(uint256 value) internal pure returns (string memory) {
-//         if (value == 0) {
-//             return "0";
-//         }
-//         uint256 temp = value;
-//         uint256 digits;
-//         while (temp != 0) {
-//             digits++;
-//             temp /= 10;
-//         }
-//         bytes memory buffer = new bytes(digits);
-//         while (value != 0) {
-//             digits -= 1;
-//             buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-//             value /= 10;
-//         }
-//         return string(buffer);
-//     }
+    function withdraw() external onlyOwner {
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            IERC20(whitelist[i]).transfer(
+                msg.sender,
+                IERC20(whitelist[i]).balanceOf(address(this))
+            );
+        }
+    }
 
-//     //--------------------//
-//     //  mutative methods  //
-//     //--------------------//
+    //--------------------//
+    //  internal methods  //
+    //--------------------//
 
-//     function publicMint(address _token) external whenNotPaused {
-//         require(whitelistedTokens[_token], "token not whitelisted");
-//         IERC20(_token).transferFrom(msg.sender, address(this), fee);
-//     }
+    function _toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
 
-//     //----------------//
-//     //  view methods  //
-//     //----------------//
+    //--------------------//
+    //  mutative methods  //
+    //--------------------//
 
-//     function supportsInterface(bytes4 _interfaceId)
-//         public
-//         view
-//         override(ERC721, ERC721Enumerable)
-//         returns (bool)
-//     {
-//         return super.supportsInterface(_interfaceId);
-//     }
+    function mint(address _token) external whenNotPaused whitelisted(_token) {
+        require(id < cap, "cap reached");
+        IERC20(_token).transferFrom(msg.sender, address(this), fee);
+        _mint(msg.sender, id);
+        id++;
+        emit Mint(id, msg.sender);
+    }
 
-//     function tokenURI(uint256 _tokenId)
-//         public
-//         view
-//         override
-//         returns (string memory)
-//     {
-//         return string(abi.encodePacked(baseUri, _toString(_tokenId)));
-//     }
+    //----------------//
+    //  view methods  //
+    //----------------//
 
-//     function getWhitelistToken(address _token) external view returns (bool) {
-//         return whitelistedTokens[_token];
-//     }
+    function supportsInterface(bytes4 _interfaceId)
+        public
+        view
+        override(ERC721)
+        returns (bool)
+    {
+        return super.supportsInterface(_interfaceId);
+    }
 
-//     //----------------//
-//     //   modifiers    //
-//     //----------------//
+    function tokenURI(uint256 _tokenid)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        if (single_asset) {
+            return string(abi.encodePacked(baseuri, "0"));
+        } else {
+            return string(abi.encodePacked(baseuri, _toString(_tokenid)));
+        }
+    }
 
-//     modifier whenNotPaused() {
-//         require(!isPaused, "Contract is paused");
-//         _;
-//     }
-// }
+    function getWhitelist() external view returns (address[] memory) {
+        return whitelist;
+    }
+
+    //----------------//
+    //   modifiers    //
+    //----------------//
+
+    modifier whenNotPaused() {
+        require(!paused, "Contract is paused");
+        _;
+    }
+    modifier whitelisted(address _token) {
+        bool isWhitelisted = false;
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            if (whitelist[i] == _token) {
+                isWhitelisted = true;
+            }
+        }
+        require(isWhitelisted, "not whitelisted");
+        _;
+    }
+}
