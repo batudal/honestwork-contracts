@@ -9,19 +9,17 @@ contract StarterNFTTest is Test {
     string public baseuri = "https://api.honestwork.app/metadata/starter/";
     string public single_asset_uri =
         "https://api.honestwork.app/metadata/starter/1";
-    MockToken public token;
+    MockToken public mocktoken;
     StarterNFT public starterNFT;
     address public zero = 0x0000000000000000000000000000000000000000;
     uint256 public mock_amount = 50000 ether;
+    uint256 public basefee = 10000000;
 
     function setUp() public {
-        token = new MockToken("MCK", "MOCK");
-        assertEq(token.balanceOf(address(this)), mock_amount);
-        starterNFT = new StarterNFT(baseuri, address(token));
+        mocktoken = new MockToken("MCK", "MOCK");
+        assertEq(mocktoken.balanceOf(address(this)), mock_amount);
+        starterNFT = new StarterNFT(baseuri, address(mocktoken), basefee);
         assertEq(starterNFT.tokenURI(42), single_asset_uri);
-        address[] memory whitelist = starterNFT.getWhitelist();
-        assertEq(whitelist.length, 1);
-        assertEq(whitelist[0], address(token));
     }
 
     function testURIToggle() public {
@@ -33,50 +31,38 @@ contract StarterNFTTest is Test {
     }
 
     function testMint() public {
-        uint256 fee = starterNFT.fee();
-        token.approve(address(starterNFT), fee);
-        starterNFT.mint(address(token));
+        (address token, uint256 fee) = starterNFT.payment();
+        IERC20(token).approve(address(starterNFT), fee);
+        starterNFT.mint();
         assertEq(starterNFT.balanceOf(address(this)), 2);
-        assertEq(token.balanceOf(address(this)), mock_amount - fee);
-        assertEq(token.balanceOf(address(starterNFT)), fee);
-    }
-
-    function testAdmint() public {
-        starterNFT.admint();
-        assertEq(starterNFT.balanceOf(address(this)), 2);
-        assertEq(starterNFT.id(), 2);
+        assertEq(IERC20(token).balanceOf(address(this)), mock_amount - fee);
+        assertEq(IERC20(token).balanceOf(address(starterNFT)), fee);
     }
 
     function testPause() public {
         starterNFT.pause();
-        uint256 fee = starterNFT.fee();
-        token.approve(address(starterNFT), fee);
+        (, uint256 fee) = starterNFT.payment();
+        mocktoken.approve(address(starterNFT), fee);
         vm.expectRevert();
-        starterNFT.mint(address(token));
-    }
-
-    function testRemoveToken() public {
-        starterNFT.removeWhitelistToken(address(token));
-        address[] memory whitelist = starterNFT.getWhitelist();
-        assertEq(whitelist[0], zero);
+        starterNFT.mint();
     }
 
     function testWithdraw() public {
-        uint256 fee = starterNFT.fee();
-        token.approve(address(starterNFT), fee);
-        starterNFT.mint(address(token));
-        starterNFT.withdraw(address(token), fee);
-        assertEq(token.balanceOf(address(starterNFT)), 0);
-        assertEq(token.balanceOf(address(this)), mock_amount);
-        token.approve(address(starterNFT), fee);
-        starterNFT.mint(address(token));
-        starterNFT.withdraw(address(token));
-        assertEq(token.balanceOf(address(starterNFT)), 0);
-        assertEq(token.balanceOf(address(this)), mock_amount);
-        token.approve(address(starterNFT), fee);
-        starterNFT.mint(address(token));
+        (, uint256 fee) = starterNFT.payment();
+        mocktoken.approve(address(starterNFT), fee);
+        starterNFT.mint();
+        starterNFT.withdraw(address(mocktoken), fee);
+        assertEq(mocktoken.balanceOf(address(starterNFT)), 0);
+        assertEq(mocktoken.balanceOf(address(this)), mock_amount);
+        mocktoken.approve(address(starterNFT), fee);
+        starterNFT.mint();
+        starterNFT.withdraw(address(mocktoken));
+        assertEq(mocktoken.balanceOf(address(starterNFT)), 0);
+        assertEq(mocktoken.balanceOf(address(this)), mock_amount);
+        mocktoken.approve(address(starterNFT), fee);
+        starterNFT.mint();
         starterNFT.withdraw();
-        assertEq(token.balanceOf(address(starterNFT)), 0);
-        assertEq(token.balanceOf(address(this)), mock_amount);
+        assertEq(mocktoken.balanceOf(address(starterNFT)), 0);
+        assertEq(mocktoken.balanceOf(address(this)), mock_amount);
     }
 }

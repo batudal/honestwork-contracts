@@ -9,34 +9,32 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author @takez0_o
 /// @notice Starter Membership NFT's to be used in the platform
 contract StarterNFT is ERC721, Ownable {
+    struct Payment {
+        address token;
+        uint256 amount;
+    }
     string public baseuri;
-    uint256 public fee = 10e18;
     uint256 public cap = 10000;
     uint256 public id = 1;
-    address[] public whitelist;
     bool public paused = false;
     bool public single_asset = true;
+    Payment public payment;
 
     event Mint(uint256 id, address user);
 
-    constructor(string memory _baseuri, address _whitelist)
-        ERC721("HonestWork Starter", "HWS")
-    {
+    constructor(
+        string memory _baseuri,
+        address _token,
+        uint256 _amount
+    ) ERC721("HonestWork Starter", "HWS") {
         baseuri = _baseuri;
-        whitelist.push(_whitelist);
+        payment = Payment(_token, _amount);
         _mint(msg.sender, 0);
     }
 
     //-----------------//
     //  admin methods  //
     //-----------------//
-
-    function admint() external onlyOwner {
-        require(id < cap, "cap reached");
-        _mint(msg.sender, id);
-        emit Mint(id, msg.sender);
-        id++;
-    }
 
     function setBaseUri(string memory _baseuri) external onlyOwner {
         baseuri = _baseuri;
@@ -50,10 +48,6 @@ contract StarterNFT is ERC721, Ownable {
         single_asset = _single_asset;
     }
 
-    function whitelistToken(address _token) external onlyOwner {
-        whitelist.push(_token);
-    }
-
     function pause() external onlyOwner {
         paused = true;
     }
@@ -62,12 +56,8 @@ contract StarterNFT is ERC721, Ownable {
         paused = false;
     }
 
-    function removeWhitelistToken(address _token) external onlyOwner {
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            if (whitelist[i] == _token) {
-                delete whitelist[i];
-            }
-        }
+    function setPayment(address _token, uint256 _amount) external onlyOwner {
+        payment = Payment(_token, _amount);
     }
 
     function withdraw(address _token, uint256 _amount) external onlyOwner {
@@ -82,12 +72,10 @@ contract StarterNFT is ERC721, Ownable {
     }
 
     function withdraw() external onlyOwner {
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            IERC20(whitelist[i]).transfer(
-                msg.sender,
-                IERC20(whitelist[i]).balanceOf(address(this))
-            );
-        }
+        IERC20(payment.token).transfer(
+            msg.sender,
+            IERC20(payment.token).balanceOf(address(this))
+        );
     }
 
     //--------------------//
@@ -117,9 +105,13 @@ contract StarterNFT is ERC721, Ownable {
     //  mutative methods  //
     //--------------------//
 
-    function mint(address _token) external whenNotPaused whitelisted(_token) {
+    function mint() external whenNotPaused {
         require(id < cap, "cap reached");
-        IERC20(_token).transferFrom(msg.sender, address(this), fee);
+        IERC20(payment.token).transferFrom(
+            msg.sender,
+            address(this),
+            payment.amount
+        );
         _mint(msg.sender, id);
         emit Mint(id, msg.sender);
         id++;
@@ -151,26 +143,12 @@ contract StarterNFT is ERC721, Ownable {
         }
     }
 
-    function getWhitelist() external view returns (address[] memory) {
-        return whitelist;
-    }
-
     //----------------//
     //   modifiers    //
     //----------------//
 
     modifier whenNotPaused() {
         require(!paused, "Contract is paused");
-        _;
-    }
-    modifier whitelisted(address _token) {
-        bool isWhitelisted = false;
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            if (whitelist[i] == _token) {
-                isWhitelisted = true;
-            }
-        }
-        require(isWhitelisted, "not whitelisted");
         _;
     }
 }
