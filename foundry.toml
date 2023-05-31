@@ -1,6 +1,6 @@
 [profile.default]
 src = 'src'
 out = 'out'
-solc = "0.8.19"
+solc = "0.8.20"
 libs = ['lib']
 gas_reports = ["*"]

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,7 +12,7 @@ contract StarterNFT is ERC721, Ownable {
     string public baseuri;
     uint256 public fee = 10e18;
     uint256 public cap = 10000;
-    uint256 public id = 0;
+    uint256 public id = 1;
     address[] public whitelist;
     bool public paused = false;
     bool public single_asset = true;
@@ -24,11 +24,19 @@ contract StarterNFT is ERC721, Ownable {
     {
         baseuri = _baseuri;
         whitelist.push(_whitelist);
+        _mint(msg.sender, 0);
     }
 
     //-----------------//
     //  admin methods  //
     //-----------------//
+
+    function admint() external onlyOwner {
+        require(id < cap, "cap reached");
+        _mint(msg.sender, id);
+        emit Mint(id, msg.sender);
+        id++;
+    }
 
     function setBaseUri(string memory _baseuri) external onlyOwner {
         baseuri = _baseuri;
@@ -113,8 +121,8 @@ contract StarterNFT is ERC721, Ownable {
         require(id < cap, "cap reached");
         IERC20(_token).transferFrom(msg.sender, address(this), fee);
         _mint(msg.sender, id);
-        id++;
         emit Mint(id, msg.sender);
+        id++;
     }
 
     //----------------//
@@ -137,7 +145,7 @@ contract StarterNFT is ERC721, Ownable {
         returns (string memory)
     {
         if (single_asset) {
-            return string(abi.encodePacked(baseuri, "0"));
+            return string(abi.encodePacked(baseuri, "1"));
         } else {
             return string(abi.encodePacked(baseuri, _toString(_tokenid)));
         }

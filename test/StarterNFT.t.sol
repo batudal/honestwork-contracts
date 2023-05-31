@@ -8,7 +8,7 @@ import "../src/StarterNFT.sol";
 contract StarterNFTTest is Test {
     string public baseuri = "https://api.honestwork.app/metadata/starter/";
     string public single_asset_uri =
-        "https://api.honestwork.app/metadata/starter/0";
+        "https://api.honestwork.app/metadata/starter/1";
     MockToken public token;
     StarterNFT public starterNFT;
     address public zero = 0x0000000000000000000000000000000000000000;
@@ -36,9 +36,15 @@ contract StarterNFTTest is Test {
         uint256 fee = starterNFT.fee();
         token.approve(address(starterNFT), fee);
         starterNFT.mint(address(token));
-        assertEq(starterNFT.balanceOf(address(this)), 1);
+        assertEq(starterNFT.balanceOf(address(this)), 2);
         assertEq(token.balanceOf(address(this)), mock_amount - fee);
         assertEq(token.balanceOf(address(starterNFT)), fee);
+    }
+
+    function testAdmint() public {
+        starterNFT.admint();
+        assertEq(starterNFT.balanceOf(address(this)), 2);
+        assertEq(starterNFT.id(), 2);
     }
 
     function testPause() public {
