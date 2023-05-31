@@ -168,7 +168,6 @@ contract HonestWorkNFT is ERC721, ERC721Enumerable, Ownable {
             _verify(_whitelistLeaf(msg.sender), whitelistRoot, _proof),
             "Invalid merkle proof"
         );
-
         whitelistCap[msg.sender] = true;
         _mint(msg.sender, newItemId);
         tier[newItemId] = 1;

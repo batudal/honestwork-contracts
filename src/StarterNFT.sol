@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @title HonestWork Starter NFT
 /// @author @takez0_o
@@ -12,6 +13,7 @@ contract StarterNFT is ERC721, Ownable {
     struct Payment {
         address token;
         uint256 amount;
+        uint256 ambassadorPercentage;
     }
     string public baseuri;
     uint256 public cap = 10000;
@@ -19,16 +21,20 @@ contract StarterNFT is ERC721, Ownable {
     bool public paused = false;
     bool public single_asset = true;
     Payment public payment;
+    bytes32 public whitelistRoot;
+    mapping(address ambassador => uint256 profit) public profits;
+    uint256 hwProfit = 0;
 
     event Mint(uint256 id, address user);
 
     constructor(
         string memory _baseuri,
         address _token,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _ambassadorPercentage
     ) ERC721("HonestWork Starter", "HWS") {
         baseuri = _baseuri;
-        payment = Payment(_token, _amount);
+        payment = Payment(_token, _amount, _ambassadorPercentage);
         _mint(msg.sender, 0);
     }
 
@@ -56,26 +62,16 @@ contract StarterNFT is ERC721, Ownable {
         paused = false;
     }
 
-    function setPayment(address _token, uint256 _amount) external onlyOwner {
-        payment = Payment(_token, _amount);
+    function setPayment(address _token, uint256 _amount, uint256 _ambassadorPercentage) external onlyOwner {
+        payment = Payment(_token, _amount, _ambassadorPercentage);
     }
 
-    function withdraw(address _token, uint256 _amount) external onlyOwner {
-        IERC20(_token).transfer(msg.sender, _amount);
-    }
-
-    function withdraw(address _token) external onlyOwner {
-        IERC20(_token).transfer(
-            msg.sender,
-            IERC20(_token).balanceOf(address(this))
-        );
+    function setWhitelistRoot(bytes32 _root) external onlyOwner {
+        whitelistRoot = _root;
     }
 
     function withdraw() external onlyOwner {
-        IERC20(payment.token).transfer(
-            msg.sender,
-            IERC20(payment.token).balanceOf(address(this))
-        );
+      IERC20(payment.token).transfer(msg.sender, hwProfit);
     }
 
     //--------------------//
@@ -101,6 +97,18 @@ contract StarterNFT is ERC721, Ownable {
         return string(buffer);
     }
 
+    function _whitelistLeaf(address _address) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_address));
+    }
+
+    function _verify(
+        bytes32 _leaf,
+        bytes32 _root,
+        bytes32[] memory _proof
+    ) internal pure returns (bool) {
+        return MerkleProof.verify(_proof, _root, _leaf);
+    }
+
     //--------------------//
     //  mutative methods  //
     //--------------------//
@@ -115,6 +123,31 @@ contract StarterNFT is ERC721, Ownable {
         _mint(msg.sender, id);
         emit Mint(id, msg.sender);
         id++;
+    }
+
+    function ambassadorMint(address _ambassador, bytes32[] calldata _proof) external whenNotPaused {
+        require(id < cap, "cap reached");
+        require(
+            _verify(_whitelistLeaf(_ambassador), whitelistRoot, _proof),
+            "Invalid merkle proof"
+        );
+        IERC20(payment.token).transferFrom(
+            msg.sender,
+            address(this),
+            payment.amount
+        );
+        _mint(msg.sender, id);
+        emit Mint(id, msg.sender);
+        uint256 profit = payment.amount * payment.ambassadorPercentage / 100;
+        profits[_ambassador] += profit;
+        hwProfit += payment.amount - profit;
+        id++;
+    }
+
+    function ambassadorClaim() external {
+        require(profits[msg.sender] > 0, "No profits to claim");
+        IERC20(payment.token).transfer(msg.sender, profits[msg.sender]);
+        profits[msg.sender] = 0;
     }
 
     //----------------//
