@@ -70,6 +70,17 @@ contract StarterNFT is ERC721, Ownable {
         whitelistRoot = _root;
     }
 
+    function withdraw(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, _amount);
+    }
+
+    function withdraw(address _token) external onlyOwner {
+        IERC20(_token).transfer(
+            msg.sender,
+            IERC20(_token).balanceOf(address(this))
+        );
+    }
+
     function withdraw() external onlyOwner {
       IERC20(payment.token).transfer(msg.sender, hwProfit);
     }
