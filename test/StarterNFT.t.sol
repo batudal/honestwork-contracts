@@ -18,6 +18,7 @@ contract StarterNFTTest is Test, MerkleUtils {
     uint256 public basefee = 10000000;
     uint256 public ambassador_percentage = 10;
     address public takezo = 0xfB1C2FF46962B452C1731d44F0789bFb3607e63f;
+    uint256 minted = 0;
 
     function setUp() public {
         mocktoken = new MockToken("MCK", "MOCK");
@@ -29,6 +30,7 @@ contract StarterNFTTest is Test, MerkleUtils {
             ambassador_percentage
         );
         assertEq(starterNFT.tokenURI(42), single_asset_uri);
+        minted++;
     }
 
     function testURIToggle() public {
@@ -60,11 +62,13 @@ contract StarterNFTTest is Test, MerkleUtils {
         (address token, uint256 fee, ) = starterNFT.payment();
         IERC20(token).approve(address(starterNFT), fee);
         starterNFT.mint();
-        starterNFT.withdraw();
         assertEq(IERC20(token).balanceOf(address(starterNFT)), fee);
+        starterNFT.withdraw();
+        assertEq(IERC20(token).balanceOf(address(this)), mock_amount);
+        assertEq(IERC20(token).balanceOf(address(starterNFT)), 0);
     }
 
-    function testAmbassadorMint() public {
+    function testAmbassadorMintClaim() public {
         bytes32[] memory ambassadors = new bytes32[](2);
         ambassadors[0] = keccak256(abi.encodePacked(address(this)));
         ambassadors[1] = keccak256(abi.encodePacked(address(takezo)));
@@ -83,5 +87,43 @@ contract StarterNFTTest is Test, MerkleUtils {
         );
         starterNFT.ambassadorClaim();
         assertEq(IERC20(token).balanceOf(address(starterNFT)), 0);
+    }
+
+    function testSetPayment() public {
+        uint256 multiplier = 2;
+        (address token, uint256 fee, uint256 percentage) = starterNFT.payment();
+        starterNFT.setPayment(
+            address(token),
+            fee * multiplier,
+            percentage * multiplier
+        );
+        IERC20(token).approve(address(starterNFT), fee * multiplier);
+        starterNFT.mint();
+        minted++;
+        console.log("minted", minted);
+        assertEq(
+            IERC20(token).balanceOf(address(starterNFT)),
+            fee * (minted - 1) * multiplier
+        );
+        bytes32[] memory ambassadors = new bytes32[](2);
+        ambassadors[0] = keccak256(abi.encodePacked(address(this)));
+        ambassadors[1] = keccak256(abi.encodePacked(address(takezo)));
+        bytes32 root = getRoot(ambassadors);
+        starterNFT.setWhitelistRoot(root);
+        bytes32[] memory proof = getProof(ambassadors, 0);
+        assertTrue(MerkleProof.verify(proof, root, ambassadors[0]));
+        IERC20(token).approve(address(starterNFT), fee * multiplier);
+        starterNFT.ambassadorMint(address(this), proof);
+        minted++;
+        assertEq(starterNFT.balanceOf(address(this)), minted);
+        assertEq(
+            IERC20(token).balanceOf(address(starterNFT)),
+            fee * (minted - 1) * multiplier
+        );
+        starterNFT.withdraw();
+        assertEq(
+            IERC20(token).balanceOf(address(starterNFT)),
+            (fee * (multiplier**2) * percentage) / 100
+        );
     }
 }
